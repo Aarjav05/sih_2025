@@ -85,6 +85,7 @@ class Student(db.Model):
     student_id = db.Column(db.String(50), unique=True, nullable=False)
     class_name = db.Column(db.String(20), nullable=False)  # class-1, class-2, etc.
     school_id = db.Column(db.Integer, db.ForeignKey('schools.id'), nullable=False)
+    gender = db.Column(db.String(10), nullable=False) 
     guardian_name = db.Column(db.String(100), nullable=False)
     guardian_phone = db.Column(db.String(15), nullable=False)
     health_notes = db.Column(db.Text)
@@ -654,7 +655,7 @@ def district_overview(user):
 def add_student(user):
     try:
         data = request.get_json()
-        required_fields = ['name', 'student_id', 'class_name', 'guardian_name', 'guardian_phone', 'face_image']
+        required_fields = ['name', 'student_id', 'class_name', 'gender', 'guardian_name', 'guardian_phone', 'face_image']
         if any(not data.get(field) for field in required_fields):
             return jsonify({'error': 'Missing required fields'}), 400
         
@@ -668,6 +669,9 @@ def add_student(user):
         student = Student(
             name=data['name'].strip(), student_id=data['student_id'].strip(),
             class_name=data['class_name'], school_id=user.school_id,
+
+            gender=data['gender'],
+
             guardian_name=data['guardian_name'].strip(), guardian_phone=data['guardian_phone'].strip(),
             health_notes=data.get('health_notes', '').strip(),
             face_encoding=json.dumps(face_encoding.tolist())
@@ -700,6 +704,7 @@ def get_class_students(user, class_name):
         students = query.all()
         students_data = [{
             'id': s.id, 'name': s.name, 'student_id': s.student_id, 'class_name': s.class_name,
+            'gender':s.gender,
             'guardian_name': s.guardian_name, 'guardian_phone': s.guardian_phone,
             'health_notes': s.health_notes, 'school_name': s.school.name
         } for s in students]
