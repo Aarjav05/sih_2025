@@ -939,10 +939,11 @@ def init_demo_data():
         db.session.add_all(assignments)
         
         students = [
-            Student(name='Aarav Sharma', student_id='STU001', class_name='class-1', school_id=school.id, guardian_name='Aarav Guardian', guardian_phone='9876543210'),
-            Student(name='Priya Patel', student_id='STU002', class_name='class-1', school_id=school.id, guardian_name='Priya Guardian', guardian_phone='9876543211'),
-            Student(name='Rohit Kumar', student_id='STU003', class_name='class-2', school_id=school.id, guardian_name='Rohit Guardian', guardian_phone='9876543212')
+            Student(name='Aarav Sharma', student_id='STU001', class_name='class-1', school_id=school.id, gender='Male', guardian_name='Aarav Guardian', guardian_phone='8591768921'),
+            Student(name='Priya Patel', student_id='STU002', class_name='class-1', school_id=school.id, gender='Female', guardian_name='Priya Guardian', guardian_phone='8591768921'),
+            Student(name='Rohit Kumar', student_id='STU003', class_name='class-2', school_id=school.id, gender='Male', guardian_name='Rohit Guardian', guardian_phone='8591768921')
         ]
+
         db.session.add_all(students)
         
         db.session.commit()

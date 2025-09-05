@@ -24,12 +24,10 @@ class Config:
     TWILIO_PHONE_NUMBER = '+18623552189' # Include the + sign
 
 
-
-
 class DevelopmentConfig(Config):
     DEBUG = True
     # In config.py, inside the DevelopmentConfig class
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:aarjav@localhost:5432/attendance_db'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:aaditya@localhost:5432/attendance_db'
 
 
 class ProductionConfig(Config):
