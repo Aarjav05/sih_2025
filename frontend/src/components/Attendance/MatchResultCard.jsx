@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,8 +11,8 @@ export default function MatchResultCard({ result, students, onMatchUpdate, confi
     const [selectedStudentId, setSelectedStudentId] = useState(result.matched_student_id || "")
 
     const matchedStudent = students.find((s) => s.student_id === result.matched_student_id)
-    const isLowConfidence = result.confidence < confidenceThreshold
     const isUnmatched = !result.matched_student_id
+    const isLowConfidence = result.confidence < confidenceThreshold && !isUnmatched;
 
     const getConfidenceBadge = () => {
         if (result.confidence >= 0.8) {

@@ -1,29 +1,44 @@
 import axios from 'axios';
 
-/**
- * Calls backend to capture attendance by processing uploaded class photo.
- * @param {string} className - Selected class name
- * @param {string} imageData - Base64 encoded class photo
- * @returns {Promise} response with matches, unmatched, present and absent students, session_id
- */
+const backendBaseUrl = 'http://localhost:5000';
+
+// Helper to get token dynamically
+const getToken = () => import.meta.env.VITE_REACT_APP_ACCESS_TOKEN || '';
+
+// Use this function to include token in headers dynamically
 export const captureAttendance = async (className, imageData) => {
-    const response = await axios.post('/api/attendance/capture', {
+    const token = getToken();
+    console.log("Token from env: " + token);
+    const response = await axios.post(`${backendBaseUrl}/api/attendance/capture`, {
         class_name: className,
         image_data: imageData,
+    }, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
     });
     return response.data;
 };
 
-/**
- * Confirms attendance for a session by sending confirmed student statuses.
- * @param {string} sessionId - ID of the attendance session
- * @param {Array} confirmations - Array of {student_id, status} objects
- * @returns {Promise} response from backend
- */
-export const confirmAttendance = async (sessionId, confirmations) => {
-    const response = await axios.post('/api/attendance/confirm', {
-        session_id: sessionId,
-        confirmations,
-    });
-    return response.data;
-};
+export async function confirmAttendance(sessionId, confirmations) {
+    const token = getToken();  // reuse your token getter if needed
+    try {
+        const response = await axios.post(
+            `${backendBaseUrl}/api/attendance/confirm`,
+            {
+                session_id: sessionId,
+                confirmations
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error confirming attendance:", error);
+        throw new Error('Failed to confirm attendance');
+    }
+}

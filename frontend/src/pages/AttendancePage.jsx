@@ -1,4 +1,4 @@
-import { captureAttendance, confirmAttendance } from '@/api/attendance';
+import { captureAttendance, confirmAttendance } from '../api/attendance';
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -146,36 +146,57 @@ export default function AttendancePage() {
         }
 
         const base64Image = photos[0].base64 // Adjust this based on your UploadCapturePanel output
+        console.log("Base64 Image:", base64Image);  // Add this log
+
+        if (!base64Image) {                      // Add this check
+            alert("Invalid image data. Please try again.");
+            setLoading(false);
+            return;
+        }
+
         setLoading(true)
         try {
             const result = await captureAttendance(selectedClass, base64Image)
+            console.log("Backend attendance capture response:", result);
+            const presentStudents = (result.present_students || []).map((s) => ({
+                student_id: s.student_id || s.id,
+                name: s.student_name || "",  // <-- Use student_name key here
+                status: "present",
+                confidence: s.confidence || null,
+                attendance_rate: s.attendance_rate || 0,
+            }));
 
-            // Compose students state: present + absent students with initial status
-            const combinedStudents = [
-                ...result.present_students.map((s) => ({
-                    student_id: s.id,
-                    name: s.name,
-                    status: "present",
-                    confidence: s.confidence || null,
-                })),
-                ...result.absent_students.map((s) => ({
-                    student_id: s.id,
-                    name: s.name,
-                    status: "absent",
-                    confidence: null,
-                })),
-            ]
+            const absentStudents = (result.absent_students || []).map((s) => ({
+                student_id: s.student_id || s.id,
+                name: s.name,
+                status: "absent",
+                confidence: null,
+                attendance_rate: s.attendance_rate || 0,
+            }));
 
-            setStudents(combinedStudents)
-            setCaptureResults(result.matches.concat(result.unmatched_faces || []))
-            setSessionId(result.session_id)
-            setCurrentStep("review")
+            const combinedStudents = [...presentStudents, ...absentStudents];
+            setStudents(combinedStudents);
+
+            setCaptureResults([
+                ...(result.present_students || []).map(face => ({
+                    ...face,
+                    face_id: face.face_index, // ensure key for MatchResultCard
+                    matched_student_id: face.student_id,
+                    matched_student_name: face.student_name,
+                })),
+                ...(result.unmatched_faces || []),
+            ]);
+
+
+            setSessionId(result.session_id);
+            setCurrentStep("review");
         } catch (error) {
-            console.error("Error capturing attendance:", error)
-            alert("Failed to process attendance. Please try again.")
+            console.error("Error capturing attendance:", error);
+            alert("Failed to process attendance. Please try again.");
         }
-        setLoading(false)
-    }
+        setLoading(false);
+    };
+
 
     const handleMatchUpdate = (faceId, studentId, status) => {
         // Update capture results
@@ -220,31 +241,37 @@ export default function AttendancePage() {
     // Confirm attendance session and save attendance to backend
     const handleConfirmSession = async (sessionNote) => {
         if (!sessionId) {
-            alert("No active session to confirm.")
-            return
+            alert('No active session to confirm.');
+            return;
         }
-
+        // Prepare confirmations with student_id and their chosen status
         const confirmations = students
-            .filter((s) => s.status !== "unmarked")
-            .map(({ student_id, status }) => ({ student_id, status }))
+            .filter(s => s.status !== 'unmarked')
+            .map(s => ({
+                student_id: s.student_id,
+                status: s.status
+            }));
 
-        setLoading(true)
+        setLoading(true);
         try {
-            await confirmAttendance(sessionId, confirmations)
-            alert("Attendance recorded successfully.")
-            // Reset state for next session
-            setUploadedPhotos([])
-            setCaptureResults([])
-            setStudents([])
-            setSessionId(null)
-            setCurrentStep("upload")
-            setShowConfirmModal(false)
+            await confirmAttendance(sessionId, confirmations);
+            alert('Attendance recorded successfully.');
+
+            // Reset states for next session after success
+            setUploadedPhotos([]);
+            setCaptureResults([]);
+            setStudents([]);
+            setSessionId(null);
+            setCurrentStep('upload');
+            setShowConfirmModal(false);
         } catch (error) {
-            console.error("Error confirming attendance:", error)
-            alert("Failed to confirm attendance. Please try again.")
+            console.error('Error confirming attendance:', error);
+            alert('Failed to confirm attendance. Please try again.');
         }
-        setLoading(false)
-    }
+        setLoading(false);
+    };
+
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 p-4">
@@ -408,7 +435,7 @@ export default function AttendancePage() {
                     onClose={() => setShowConfirmModal(false)}
                     onConfirm={handleConfirmSession}
                     sessionSummary={sessionSummary}
-                    selectedClass={MOCK_CLASSES.find((c) => c.id === selectedClass)?.name || ""}
+                    selectedClass={selectedClass}
                     selectedDate={selectedDate}
                 />
             </div>

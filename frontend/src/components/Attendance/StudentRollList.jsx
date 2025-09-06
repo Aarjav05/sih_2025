@@ -18,7 +18,7 @@ export default function StudentRollList({ students, onStatusChange }) {
     // Filter and sort students
     const filteredStudents = useMemo(() => {
         const filtered = students.filter((student) => {
-            const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase())
+            const matchesSearch = (student.name || "").toLowerCase().includes(searchTerm.toLowerCase())
             const matchesStatus = statusFilter === "all" || student.status === statusFilter
             return matchesSearch && matchesStatus
         })
@@ -187,7 +187,7 @@ export default function StudentRollList({ students, onStatusChange }) {
                                 {/* Avatar */}
                                 <Avatar className="h-10 w-10 flex-shrink-0">
                                     <AvatarImage src={student.avatarUrl || "/placeholder.svg"} alt={student.name} />
-                                    <AvatarFallback className="bg-purple-100 text-purple-600">{student.name.charAt(0)}</AvatarFallback>
+                                    <AvatarFallback className="bg-purple-100 text-purple-600">{(student.name && student.name.length > 0) ? student.name.charAt(0) : "?"}</AvatarFallback>
                                 </Avatar>
 
                                 {/* Student Info */}

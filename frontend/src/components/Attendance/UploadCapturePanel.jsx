@@ -18,7 +18,7 @@ export default function UploadCapturePanel({ onPhotosUploaded, selectedClass }) 
     const [showCameraInfo, setShowCameraInfo] = useState(false)
     const fileInputRef = useRef(null)
 
-    const handleFileSelect = (files) => {
+    const handleFileSelect = async (files) => {
         if (!selectedClass) {
             alert("Please select a class first")
             return
@@ -31,14 +31,21 @@ export default function UploadCapturePanel({ onPhotosUploaded, selectedClass }) 
             return
         }
 
-        // Convert files to photo objects with preview URLs
-        const photos = validFiles.map((file, index) => ({
-            id: `p${Date.now()}_${index}`,
-            file,
-            url: URL.createObjectURL(file),
-            name: file.name,
-            size: file.size,
-        }))
+        // Convert all valid files to photo objects with base64 strings
+        const photos = await Promise.all(
+            validFiles.map(async (file, index) => {
+                const base64 = await toBase64(file)
+                return {
+                    id: `p${Date.now()}_${index}`,
+                    file,
+                    url: URL.createObjectURL(file), // for preview
+                    name: file.name,
+                    size: file.size,
+                    base64, // base64 image string for API usage
+                }
+            })
+        )
+
 
         onPhotosUploaded(photos)
     }
