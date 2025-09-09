@@ -32,7 +32,11 @@ app.config.from_object(config['development'])  # or 'production' / 'testing'
 # Initialize extensions
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
-CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:5500"])
+CORS(app, origins=[
+    "http://localhost:3000",
+    "http://127.0.0.1:5500",
+    "http://localhost:5173"
+])
 
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -217,7 +221,11 @@ def require_role(allowed_roles):
 def require_school_access(f):
     @wraps(f)
     def decorated_function(user, *args, **kwargs):
-        school_id = request.json.get('school_id') or request.args.get('school_id')
+        # For GET requests, use request.args instead of request.json
+        if request.method == 'GET':
+            school_id = request.args.get('school_id')
+        else:
+            school_id = request.json.get('school_id') if request.json else None
         
         if user.role == 'district':
             if school_id:
@@ -687,6 +695,9 @@ def add_student(user):
         logger.error(f"Error adding student: {str(e)}")
         return jsonify({'error': 'Failed to add student'}), 500
 
+
+
+
 @app.route('/api/students/class/<class_name>', methods=['GET'])
 @require_role(['teacher', 'principal', 'district'])
 @require_school_access
@@ -700,11 +711,20 @@ def get_class_students(user, class_name):
             query = query.filter_by(school_id=user.school_id)
         elif user.role == 'principal':
             query = query.filter_by(school_id=user.school_id)
+        elif user.role == 'district':
+            # For district users, they might want to see students from specific schools
+            school_id = request.args.get('school_id')
+            if school_id:
+                school = School.query.get(school_id)
+                if school and school.district_id == user.district_id:
+                    query = query.filter_by(school_id=school_id)
+                else:
+                    return jsonify({'error': 'Invalid school or access denied'}), 403
         
         students = query.all()
         students_data = [{
             'id': s.id, 'name': s.name, 'student_id': s.student_id, 'class_name': s.class_name,
-            'gender':s.gender,
+            'gender': s.gender,
             'guardian_name': s.guardian_name, 'guardian_phone': s.guardian_phone,
             'health_notes': s.health_notes, 'school_name': s.school.name
         } for s in students]
