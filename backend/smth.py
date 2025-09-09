@@ -6,6 +6,7 @@ from flask import current_app
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from sqlalchemy import func
 from twilio.rest import Client
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -32,7 +33,10 @@ app.config.from_object(config['development'])  # or 'production' / 'testing'
 # Initialize extensions
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
-CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:5500"])
+CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:5500","http://localhost:5173"],
+      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allow_headers=["Authorization", "Content-Type"],
+      supports_credentials=True)
 
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -217,7 +221,11 @@ def require_role(allowed_roles):
 def require_school_access(f):
     @wraps(f)
     def decorated_function(user, *args, **kwargs):
-        school_id = request.json.get('school_id') or request.args.get('school_id')
+        # For GET requests, use request.args instead of request.json
+        if request.method == 'GET':
+            school_id = request.args.get('school_id')
+        else:
+            school_id = request.json.get('school_id') if request.json else None
         
         if user.role == 'district':
             if school_id:
@@ -271,7 +279,15 @@ def process_class_photo(image_data):
         image_array = np.array(image)
         
         face_locations = face_recognition.face_locations(image_array)
+
+        logger.info(f"[DEBUG] Number of faces detected: {len(face_locations)}")  # Added debug log
+
         face_encodings = face_recognition.face_encodings(image_array, face_locations)
+
+        logger.info(f"[DEBUG] Number of face encodings extracted: {len(face_encodings)}")  # Added debug log
+
+        if len(face_encodings) > 0:
+            logger.debug(f"[DEBUG] Sample face encoding (first 5 values): {face_encodings[0][:5]}")  # Added debug log
         
         return {
             'face_locations': face_locations,
@@ -290,11 +306,16 @@ def match_faces_to_students(face_encodings, class_name, school_id):
         school_id=school_id,
         is_active=True
     ).all()
+
+    logger.info(f"[DEBUG] Number of students fetched for matching: {len(students)}")  # Added debug log
+
     
     matches = []
     unmatched_faces = []
     
     tolerance = app.config.get('FACE_RECOGNITION_TOLERANCE', 0.6)
+
+    logger.info(f"[DEBUG] Face recognition tolerance set to: {tolerance}")  # Added debug log
 
     for i, face_encoding in enumerate(face_encodings):
         best_match = None
@@ -327,7 +348,9 @@ def match_faces_to_students(face_encodings, class_name, school_id):
                 'face_index': i,
                 'confidence': 0
             })
-    
+            logger.info(f"[DEBUG] Face {i} unmatched.")  # Added debug log
+
+    logger.info(f"[DEBUG] Total matches: {len(matches)}, unmatched faces: {len(unmatched_faces)}")  # Added debug log
     return matches, unmatched_faces
 
 # --- API Routes ---
@@ -700,11 +723,20 @@ def get_class_students(user, class_name):
             query = query.filter_by(school_id=user.school_id)
         elif user.role == 'principal':
             query = query.filter_by(school_id=user.school_id)
+        elif user.role == 'district':
+            # For district users, they might want to see students from specific schools
+            school_id = request.args.get('school_id')
+            if school_id:
+                school = School.query.get(school_id)
+                if school and school.district_id == user.district_id:
+                    query = query.filter_by(school_id=school_id)
+                else:
+                    return jsonify({'error': 'Invalid school or access denied'}), 403
         
         students = query.all()
         students_data = [{
             'id': s.id, 'name': s.name, 'student_id': s.student_id, 'class_name': s.class_name,
-            'gender':s.gender,
+            'gender': s.gender,
             'guardian_name': s.guardian_name, 'guardian_phone': s.guardian_phone,
             'health_notes': s.health_notes, 'school_name': s.school.name
         } for s in students]
@@ -714,6 +746,29 @@ def get_class_students(user, class_name):
     except Exception as e:
         logger.error(f"Error fetching students: {str(e)}")
         return jsonify({'error': 'Failed to fetch students'}), 500
+    
+# Atharva added new route
+@app.route('/api/students/school/summary', methods=['GET'])
+@require_role(['principal', 'district'])
+@require_school_access
+def school_students_summary(user):
+    try:
+        query = Student.query.filter_by(is_active=True, school_id=user.school_id)
+
+        total = query.count()
+
+        by_class = query.with_entities(Student.class_name, func.count(Student.id)).group_by(Student.class_name).all()
+
+        result = {
+            "total_students": total,
+            "per_class_counts": [{"class_name": c, "count": cnt} for c, cnt in by_class]
+        }
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error(f"Error fetching school summary: {str(e)}")
+        return jsonify({'error': 'Failed to fetch school student summary'}), 500
+
 
 # Attendance Routes
 @app.route('/api/attendance/capture', methods=['POST'])
@@ -785,17 +840,25 @@ def confirm_attendance(user):
         
         today = datetime.utcnow().date()
         AttendanceRecord.query.filter_by(date=today, session_id=session_id).delete()
+
+        # Atharva added
+        db.session.commit()
         
         records_created = 0
+        
         for conf in confirmations:
-            student = Student.query.get(conf.get('student_id'))
+            student = Student.query.filter_by(student_id=conf.get('student_id')).first()
             if not student or student.school_id != user.school_id:
                 continue
             
             record = AttendanceRecord(
-                student_id=student.id, date=today, status=conf.get('status', 'present'),
-                confidence_score=conf.get('confidence'), method='face_recognition',
-                recorded_by=user.id, session_id=session_id
+                student_id=student.id,
+                date=today,
+                status=conf.get('status', 'present'),
+                confidence_score=conf.get('confidence'),
+                method='face_recognition',
+                recorded_by=user.id,
+                session_id=session_id,
             )
             db.session.add(record)
             records_created += 1
