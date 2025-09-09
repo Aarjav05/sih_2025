@@ -109,7 +109,10 @@ export default function AttendancePage() {
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
     const [sessionId, setSessionId] = useState(null)
-    const [loading, setLoading] = useState(false)
+    const [facesDetected, setFacesDetected] = useState(0);
+    const [matchesFound, setMatchesFound] = useState(0);
+    const [photoSize, setPhotoSize] = useState(0);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (uploadedPhotos.length > 0) {
@@ -117,7 +120,11 @@ export default function AttendancePage() {
         } else {
             setSelectedPhoto(null)
         }
-    }, [uploadedPhotos])
+
+        // Log here whenever matchesFound or facesDetected update alongside uploadedPhotos
+        console.log("Matches Found:", matchesFound);
+        console.log("Faces Detected:", facesDetected);
+    }, [uploadedPhotos, matchesFound, facesDetected]);
 
 
     useEffect(() => {
@@ -146,6 +153,8 @@ export default function AttendancePage() {
         }
 
         const base64Image = photos[0].base64 // Adjust this based on your UploadCapturePanel output
+        const imageSizeMB = photos[0].size / (1024 * 1024);  // Convert bytes to MB
+        setPhotoSize(imageSizeMB);
         console.log("Base64 Image:", base64Image);  // Add this log
 
         if (!base64Image) {                      // Add this check
@@ -158,8 +167,12 @@ export default function AttendancePage() {
         try {
             const result = await captureAttendance(selectedClass, base64Image)
             console.log("Backend attendance capture response:", result);
+            await setFacesDetected(result.faces_detected);
+            await setMatchesFound(result.matches_found);
+            console.log("Matches Found: " + matchesFound);
             const presentStudents = (result.present_students || []).map((s) => ({
-                student_id: s.student_id || s.id,
+                id: s.id || null,
+                student_id: s.student_id_number || s.student_id || String(s.id || ""),
                 name: s.student_name || "",  // <-- Use student_name key here
                 status: "present",
                 confidence: s.confidence || null,
@@ -180,9 +193,9 @@ export default function AttendancePage() {
             setCaptureResults([
                 ...(result.present_students || []).map(face => ({
                     ...face,
-                    face_id: face.face_index, // ensure key for MatchResultCard
-                    matched_student_id: face.student_id,
-                    matched_student_name: face.student_name,
+                    face_id: face.face_index ?? face.id ?? face.student_id, // ensure key for MatchResultCard
+                    matched_student_id: face.student_id_number || face.student_id || "",
+                    matched_student_name: face.student_name || face.name || "",
                 })),
                 ...(result.unmatched_faces || []),
             ]);
@@ -241,35 +254,44 @@ export default function AttendancePage() {
     // Confirm attendance session and save attendance to backend
     const handleConfirmSession = async (sessionNote) => {
         if (!sessionId) {
-            alert('No active session to confirm.');
+            alert("No active session to confirm.");
             return;
         }
-        // Prepare confirmations with student_id and their chosen status
+
+        // Prepare confirmations array using string student_id, not integer id
         const confirmations = students
-            .filter(s => s.status !== 'unmarked')
-            .map(s => ({
-                student_id: s.student_id,
-                status: s.status
+            .filter((s) => s.status !== "unmarked")
+            .map((s) => ({
+                student_id: s.student_id, // Send string ID here
+                status: s.status,
             }));
 
         setLoading(true);
+        console.log("Confirmations preparing to send:", students
+            .filter(s => s.status !== "unmarked")
+            .map(s => ({
+                student_id: s.student_id,
+                status: s.status,
+            })));
+
         try {
             await confirmAttendance(sessionId, confirmations);
-            alert('Attendance recorded successfully.');
+            alert("Attendance recorded successfully.");
 
-            // Reset states for next session after success
+            // Reset states after successful confirm
             setUploadedPhotos([]);
             setCaptureResults([]);
             setStudents([]);
             setSessionId(null);
-            setCurrentStep('upload');
+            setCurrentStep("upload");
             setShowConfirmModal(false);
         } catch (error) {
-            console.error('Error confirming attendance:', error);
-            alert('Failed to confirm attendance. Please try again.');
+            console.error("Error confirming attendance:", error);
+            alert("Failed to confirm attendance. Please try again.");
         }
         setLoading(false);
     };
+
 
 
 
@@ -278,7 +300,6 @@ export default function AttendancePage() {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-6">
-
                     {/* Class and Date Selection */}
                     <Card className="mb-4">
                         <CardContent className="p-4">
@@ -351,13 +372,18 @@ export default function AttendancePage() {
 
                             {selectedPhoto && (
                                 <PreviewOverlay
+                                    photoSize={photoSize}
                                     photo={selectedPhoto}
                                     captureResults={captureResults.filter((r) => r.photo_id === selectedPhoto.id)}
+                                    facesDetected={facesDetected}
+                                    matchesFound={matchesFound}
                                     onFaceClick={(faceId) => {
                                         console.log("[v0] Face clicked:", faceId)
                                     }}
                                 />
                             )}
+                            {/* Student Roll */}
+                            <StudentRollList students={students} onStatusChange={handleStudentStatusChange} />
                         </div>
 
                         {/* Right Column - Match Results & Controls */}
@@ -413,8 +439,8 @@ export default function AttendancePage() {
                                 </CardContent>
                             </Card>
 
-                            {/* Student Roll */}
-                            <StudentRollList students={students} onStatusChange={handleStudentStatusChange} />
+
+                            {/* <StudentRollList students={students} onStatusChange={handleStudentStatusChange} /> */}
 
                             {/* Confirm Button */}
                             <Button

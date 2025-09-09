@@ -1,6 +1,5 @@
-"use client"
 import * as React from "react"
-import { Pie, PieChart, Label } from "recharts"
+import { Pie, PieChart, Cell, Label, Tooltip } from "recharts"
 import {
     Card,
     CardContent,
@@ -14,11 +13,6 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/components/ui/chart"
-
-const chartData = [
-    { status: "Present", count: 108, fill: "var(--chart-1)" }, // blue
-    { status: "Absent", count: 42, fill: "var(--chart-2)" },   // red
-]
 
 const chartConfig = {
     visitors: {
@@ -34,10 +28,11 @@ const chartConfig = {
     },
 }
 
-export default function AttendanceDonutChart() {
-    const totalCount = React.useMemo(() => {
-        return chartData.reduce((acc, curr) => acc + curr.count, 0)
-    }, [])
+export default function ChartPie({ data }) {
+    console.log("ChartPie data: ", data);
+    const totalCount = data ? data.reduce((total, entry) => total + entry.value, 0) : 0;
+
+
 
     return (
         <Card className="flex flex-col">
@@ -47,21 +42,22 @@ export default function AttendanceDonutChart() {
             <CardContent className="flex-1 pb-0">
                 <ChartContainer
                     config={chartConfig}
-                    className="mx-auto aspect-square max-h-[250px]"
+                    className="mx-auto aspect-square max-h-[280px]"
                 >
-                    <PieChart>
-                        <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent hideLabel />}
-                        />
+                    <PieChart width={250} height={250}>
                         <Pie
-                            data={chartData}
-                            dataKey="count"
-                            nameKey="status"
-                            innerRadius={60}
-                            strokeWidth={5}
+                            data={data}
+                            dataKey="value"
+                            nameKey="label"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={70}
+                            outerRadius={95}
                             paddingAngle={4}
                         >
+                            {data.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
                             <Label
                                 content={({ viewBox }) => {
                                     if (viewBox && "cx" in viewBox && "cy" in viewBox) {
@@ -71,27 +67,27 @@ export default function AttendanceDonutChart() {
                                                 y={viewBox.cy}
                                                 textAnchor="middle"
                                                 dominantBaseline="middle"
+                                                className="text-3xl font-bold fill-foreground"
                                             >
+                                                {totalCount}
                                                 <tspan
                                                     x={viewBox.cx}
-                                                    y={viewBox.cy}
-                                                    className="fill-foreground text-3xl font-bold"
-                                                >
-                                                    {totalCount.toLocaleString()}
-                                                </tspan>
-                                                <tspan
-                                                    x={viewBox.cx}
-                                                    y={(viewBox.cy || 0) + 24}
-                                                    className="fill-muted-foreground"
+                                                    dy="1.5em"
+                                                    className="text-sm fill-muted-foreground"
                                                 >
                                                     Total
                                                 </tspan>
                                             </text>
-                                        )
+                                        );
                                     }
+                                    return null;
                                 }}
                             />
                         </Pie>
+                        <Tooltip
+                            content={<ChartTooltipContent />}
+                            cursor={false}
+                        />
                     </PieChart>
                 </ChartContainer>
             </CardContent>

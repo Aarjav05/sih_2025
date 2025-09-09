@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react"
 
-export default function PreviewOverlay({ photo, captureResults, onFaceClick }) {
+export default function PreviewOverlay({ photo, photoSize, captureResults, onFaceClick, facesDetected, matchesFound }) {
     const [zoom, setZoom] = useState(1)
     const [selectedFaceId, setSelectedFaceId] = useState(null)
 
@@ -154,14 +154,14 @@ export default function PreviewOverlay({ photo, captureResults, onFaceClick }) {
                             <span className="font-medium">Photo:</span> {photo.name}
                         </div>
                         <div>
-                            <span className="font-medium">Faces Detected:</span> {captureResults?.length || 0}
+                            <span className="font-medium">Faces Detected:</span> {facesDetected}
                         </div>
                         <div>
-                            <span className="font-medium">Size:</span> {(photo.size / 1024 / 1024).toFixed(1)} MB
+                            <span className="font-medium">Size:</span> {photoSize.toFixed(4)} MB
                         </div>
                         <div>
                             <span className="font-medium">Matched:</span>{" "}
-                            {captureResults?.filter((r) => r.matched_student_id).length || 0}
+                            {matchesFound}
                         </div>
                     </div>
                 </div>

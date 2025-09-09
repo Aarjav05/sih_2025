@@ -6,7 +6,7 @@ export default function KpiCard({ title, value, icon: Icon, trend }) {
 
     return (
         <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
+            <CardContent className="p-3">
                 <div className="flex items-center justify-between">
                     <div className="flex-1">
                         <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>

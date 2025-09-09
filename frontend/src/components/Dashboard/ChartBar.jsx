@@ -1,40 +1,66 @@
-"use client"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+"use client";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from "@/components/ui/card";
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+} from "@/components/ui/chart";
 
 export default function ChartBar({ data }) {
+    const chartConfig = {
+        attendance: {
+            label: "Attendance (%)",
+            color: "#3b82f6", // blue
+        },
+    };
+
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Attendance by Class</CardTitle>
+                <CardTitle>Attendance by Class</CardTitle>
+                <CardDescription>
+                    Percentage attendance across all classes
+                </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data} layout="horizontal">
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis
-                                type="number"
-                                domain={[0, 100]}
-                                stroke="hsl(var(--muted-foreground))"
-                                fontSize={12}
-                                tickFormatter={(value) => `${value}%`}
-                            />
-                            <YAxis type="category" dataKey="class" stroke="hsl(var(--muted-foreground))" fontSize={12} width={80} />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: "hsl(var(--card))",
-                                    border: "1px solid hsl(var(--border))",
-                                    borderRadius: "8px",
-                                }}
-                                formatter={(value) => [`${value}%`, "Attendance"]}
-                            />
-                            <Bar dataKey="attendance" fill="hsl(var(--chart-1))" radius={[0, 4, 4, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
+                <ChartContainer config={chartConfig} className="w-full">
+                    <BarChart data={data} height={350}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                            dataKey="class_name"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                        />
+                        <YAxis
+                            dataKey="attendance"
+                            tickLine={false}
+                            axisLine={false}
+                            domain={[0, 100]}
+                            tickFormatter={value => `${value}%`}
+                            label={{
+                                value: 'Attendance (%)',
+                                angle: -90,
+                                position: 'insideLeft',
+                                offset: 10,
+                                fontSize: 13,
+                            }}
+                        />
+                        <Bar dataKey="attendance" fill="#3b82f6" radius={8} />
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
+                        />
+                    </BarChart>
+                </ChartContainer>
             </CardContent>
         </Card>
-    )
+    );
 }

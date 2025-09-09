@@ -19,11 +19,10 @@ export default function DashboardLayout({ children }) {
                 <div className="w-9" /> {/* Spacer for centering */}
             </div>
 
-            {/* Sidebar */}
-            <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+
 
             {/* Main Content */}
-            <div className="lg:ml-16 transition-all duration-300 ease-in-out">
+            <div className="transition-all duration-300 ease-in-out">
                 <div className="p-6">
                     {/* Desktop Header */}
                     <div className="hidden lg:flex items-center justify-between mb-6">

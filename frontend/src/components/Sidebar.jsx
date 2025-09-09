@@ -6,13 +6,13 @@ import { Users, Calendar, UserCheck, TrendingUp, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigationItems = [
-    { icon: Calendar, label: "Dashboard", active: true },
-    { icon: Users, label: "Students", active: false },
-    { icon: UserCheck, label: "Attendance", active: false },
-    { icon: TrendingUp, label: "Reports", active: false },
+    { icon: Calendar, label: "Dashboard", page: "dashboard" },
+    { icon: Users, label: "Students", page: "students" },
+    { icon: UserCheck, label: "Attendance", page: "attendance" },
+    { icon: TrendingUp, label: "Reports", page: "reports" },
 ]
 
-export default function Sidebar({ isOpen, onToggle, className }) {
+export default function Sidebar({ isOpen, onToggle, onNavigate, currentPage = "dashboard", className }) {
     const [isHovered, setIsHovered] = useState(false)
     const [isMobile, setIsMobile] = useState(false)
 
@@ -37,7 +37,7 @@ export default function Sidebar({ isOpen, onToggle, className }) {
         return () => document.removeEventListener("keydown", handleEscape)
     }, [isOpen, isMobile, onToggle])
 
-    const sidebarWidth = isHovered && !isMobile ? "w-64" : "w-18"
+    const sidebarWidth = isHovered && !isMobile ? "w-64" : "w-16"
     const showLabels = (isHovered && !isMobile) || (isMobile && isOpen)
 
     if (isMobile) {
@@ -58,12 +58,12 @@ export default function Sidebar({ isOpen, onToggle, className }) {
                         {/* Header with close button */}
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-2">
-                                <div className="w-10 h-8 bg-primary rounded-lg flex items-center justify-center">
-                                    <Users className="w-8 h-5 text-primary-foreground" />
+                                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                                    <Users className="w-5 h-5 text-primary-foreground" />
                                 </div>
                                 <h1 className="text-xl font-bold text-sidebar-foreground">AttendanceHub</h1>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={onToggle} aria-label="Close sidebar">
+                            <Button variant="ghost" size="sm" onClick={() => { console.log("clicked") }} aria-label="Close sidebar">
                                 <X className="w-4 h-4" />
                             </Button>
                         </div>
@@ -73,8 +73,12 @@ export default function Sidebar({ isOpen, onToggle, className }) {
                             {navigationItems.map((item, index) => (
                                 <Button
                                     key={index}
-                                    variant={item.active ? "secondary" : "ghost"}
+                                    variant={currentPage === item.page ? "secondary" : "ghost"}
                                     className="w-full justify-start gap-2"
+                                    onClick={() => {
+                                        onNavigate?.(item.page)
+                                        onToggle() // Close mobile sidebar after navigation
+                                    }}
                                 >
                                     <item.icon className="w-4 h-4" />
                                     {item.label}
@@ -119,12 +123,13 @@ export default function Sidebar({ isOpen, onToggle, className }) {
                     {navigationItems.map((item, index) => (
                         <Button
                             key={index}
-                            variant={item.active ? "secondary" : "ghost"}
+                            variant={currentPage === item.page ? "secondary" : "ghost"}
                             className={cn(
                                 "w-full transition-all duration-300",
                                 showLabels ? "justify-start gap-2" : "justify-center px-2",
                             )}
                             aria-label={!showLabels ? item.label : undefined}
+                            onClick={() => onNavigate?.(item.page)}
                         >
                             <item.icon className="w-4 h-4 flex-shrink-0" />
                             <span

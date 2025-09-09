@@ -167,7 +167,7 @@ export default function StudentRollList({ students, onStatusChange }) {
                 </div>
 
                 {/* Student List */}
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="space-y-2 max-h-full overflow-y-auto">
                     {filteredStudents.length === 0 ? (
                         <div className="text-center py-8 text-gray-500">
                             <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
