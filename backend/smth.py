@@ -33,18 +33,10 @@ app.config.from_object(config['development'])  # or 'production' / 'testing'
 # Initialize extensions
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
-<<<<<<< HEAD
 CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:5500","http://localhost:5173"],
       methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allow_headers=["Authorization", "Content-Type"],
       supports_credentials=True)
-=======
-CORS(app, origins=[
-    "http://localhost:3000",
-    "http://127.0.0.1:5500",
-    "http://localhost:5173"
-])
->>>>>>> 1f2a49b6f7ceaf983ad7cb10d188aa97a6e0ad6c
 
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
