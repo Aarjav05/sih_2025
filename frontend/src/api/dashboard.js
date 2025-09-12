@@ -3,7 +3,7 @@ import axios from 'axios';
 const backendBaseUrl = 'http://localhost:5000';
 
 // Helper to get token dynamically
-const getToken = () => import.meta.env.VITE_REACT_APP_ACCESS_TOKEN || '';
+const getToken = () => localStorage.getItem('access_token') || '';
 
 export async function fetchGenderData(className, includeAttendance = false, attendanceData = []) {
     try {
@@ -210,6 +210,21 @@ export async function fetchAttendanceAreaChartData(rangeDays = 7) {
         }));
     } catch (error) {
         console.error("Error fetching area chart data:", error);
+        return [];
+    }
+}
+
+export async function fetchLowAttendanceWatchlist(threshold = 75, days = 30, className = "") {
+    try {
+        const token = getToken();
+        let url = `${backendBaseUrl}/api/attendance/watchlist?threshold=${threshold}&days=${days}`;
+        if (className) url += `&class_name=${encodeURIComponent(className)}`;
+        const response = await axios.get(url, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data.watchlist || [];
+    } catch (error) {
+        console.error("Error fetching watchlist:", error);
         return [];
     }
 }

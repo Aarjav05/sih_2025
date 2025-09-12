@@ -3,7 +3,7 @@ import axios from 'axios';
 const backendBaseUrl = 'http://localhost:5000';
 
 // Helper to get token dynamically
-const getToken = () => import.meta.env.VITE_REACT_APP_ACCESS_TOKEN || '';
+const getToken = () => localStorage.getItem('access_token') || '';
 
 // Use this function to include token in headers dynamically
 export const captureAttendance = async (className, imageData) => {
@@ -59,4 +59,28 @@ export async function fetchTodayAttendance(className, date) {
         student_id: r.student_id,
         status: r.status,
     }));
+}
+
+export async function sendAbsenceSMS({ message, targetClass }) {
+    const token = getToken();
+    // Build payload based on class filter
+    const payload = {
+        recipients: "absent",
+        message
+    };
+    if (targetClass) payload.target_class = targetClass; // Optional
+
+    try {
+        const response = await axios.post(
+            `${backendBaseUrl}/api/sms/send`,
+            payload,
+            {
+                headers: { Authorization: `Bearer ${token}` }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error("Error sending SMS notifications:", error);
+        throw new Error("Failed to send absence SMS notifications");
+    }
 }

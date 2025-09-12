@@ -49,7 +49,7 @@ export default function ChartArea({ data, timeRange, onTimeRangeChange }) {
             </CardHeader>
             <CardContent>
                 <ChartContainer config={{ present: { label: "Present" }, absent: { label: "Absent" } }}>
-                    <AreaChart data={data} width={800} height={400} margin={{ top: 20, right: 30, bottom: 20, left: 0 }}>
+                    <AreaChart data={data} width={900} height={500} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" tickFormatter={dateTickFormatter} />
                         <YAxis />

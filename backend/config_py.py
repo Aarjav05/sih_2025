@@ -19,9 +19,7 @@ class Config:
     
     # SMS settings (for future integration)
     # In config.py, inside the Config class
-    TWILIO_ACCOUNT_SID = 'AC7f54ae9012bfa1296d94fa3b73bc4f3c'
-    TWILIO_AUTH_TOKEN = '1a76c6367424c13719210105a9b7e566'
-    TWILIO_PHONE_NUMBER = '+18623552189' # Include the + sign
+
 
 
 class DevelopmentConfig(Config):

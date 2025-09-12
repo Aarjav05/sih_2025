@@ -1,149 +1,114 @@
-"use client"
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Users, Calendar, BarChart, X, LogOut, UserCheck, ChartPie } from "lucide-react";
+import { useAuth } from '../Context/AuthContext';
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Users, Calendar, UserCheck, TrendingUp, X } from "lucide-react"
-import { cn } from "@/lib/utils"
+const menuItems = [
+    { label: "Dashboard", icon: <Calendar />, to: "/dashboard" },
+    { label: "Students", icon: <Users />, to: "/students" },
+    { label: "Teachers", icon: <Users />, to: "/teachers" },
+    { label: "Attendance", icon: <UserCheck />, to: "/attendance" },
+    { label: "Analytics", icon: <ChartPie />, to: "/analytics" }
+];
 
-const navigationItems = [
-    { icon: Calendar, label: "Dashboard", page: "dashboard" },
-    { icon: Users, label: "Students", page: "students" },
-    { icon: UserCheck, label: "Attendance", page: "attendance" },
-    { icon: TrendingUp, label: "Reports", page: "reports" },
-]
+export default function Sidebar({ open, setOpen }) {
+    const [isHovered, setIsHovered] = useState(false);
+    const location = useLocation();
+    const { logout } = useAuth();
 
-export default function Sidebar({ isOpen, onToggle, onNavigate, currentPage = "dashboard", className }) {
-    const [isHovered, setIsHovered] = useState(false)
-    const [isMobile, setIsMobile] = useState(false)
-
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 1024)
-        }
-
-        checkMobile()
-        window.addEventListener("resize", checkMobile)
-        return () => window.removeEventListener("resize", checkMobile)
-    }, [])
-
-    useEffect(() => {
-        const handleEscape = (e) => {
-            if (e.key === "Escape" && isOpen && isMobile) {
-                onToggle()
-            }
-        }
-
-        document.addEventListener("keydown", handleEscape)
-        return () => document.removeEventListener("keydown", handleEscape)
-    }, [isOpen, isMobile, onToggle])
-
-    const sidebarWidth = isHovered && !isMobile ? "w-64" : "w-16"
-    const showLabels = (isHovered && !isMobile) || (isMobile && isOpen)
-
-    if (isMobile) {
-        return (
-            <>
-                {/* Mobile Overlay */}
-                {isOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onToggle} aria-hidden="true" />}
-
-                {/* Mobile Sidebar */}
-                <div
-                    className={cn(
-                        "fixed left-0 top-0 h-full w-64 bg-sidebar border-r border-sidebar-border z-50 transform transition-transform duration-300 ease-in-out lg:hidden",
-                        isOpen ? "translate-x-0" : "-translate-x-full",
-                        className,
-                    )}
-                >
-                    <div className="p-6">
-                        {/* Header with close button */}
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                                    <Users className="w-5 h-5 text-primary-foreground" />
-                                </div>
-                                <h1 className="text-xl font-bold text-sidebar-foreground">AttendanceHub</h1>
-                            </div>
-                            <Button variant="ghost" size="sm" onClick={() => { console.log("clicked") }} aria-label="Close sidebar">
-                                <X className="w-4 h-4" />
-                            </Button>
-                        </div>
-
-                        {/* Navigation */}
-                        <nav className="space-y-2">
-                            {navigationItems.map((item, index) => (
-                                <Button
-                                    key={index}
-                                    variant={currentPage === item.page ? "secondary" : "ghost"}
-                                    className="w-full justify-start gap-2"
-                                    onClick={() => {
-                                        onNavigate?.(item.page)
-                                        onToggle() // Close mobile sidebar after navigation
-                                    }}
-                                >
-                                    <item.icon className="w-4 h-4" />
-                                    {item.label}
-                                </Button>
-                            ))}
-                        </nav>
-                    </div>
-                </div>
-            </>
-        )
-    }
-
-    // Desktop Sidebar
     return (
-        <div
-            className={cn(
-                "fixed left-0 top-0 h-full bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out group z-30 hidden lg:block",
-                sidebarWidth,
-                className,
+        <>
+            {/* Mobile backdrop - ONLY show on mobile when open */}
+            {open && (
+                <div
+                    className="fixed inset-0 bg-opacity-50 backdrop-blur-sm z-40 lg:hidden"
+                    onClick={() => setOpen(false)}
+                />
             )}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            <div className="py-6 px-2">
-                {/* Header */}
-                <div className="flex items-center gap-2 mb-8 overflow-hidden">
-                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Users className="w-5 h-5 text-primary-foreground" />
+
+            {/* Sidebar */}
+            <aside
+                className={`
+          fixed left-0 top-0 h-full bg-[#edeafd] z-50 transition-all duration-300 ease-in-out
+          ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isHovered ? 'lg:w-64' : 'lg:w-18'}
+          w-64 lg:block
+        `}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            >
+                {/* Mobile header with close button - ONLY visible on mobile */}
+                <div className="lg:hidden flex items-center justify-between p-4 border-b border-blue-200">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-blue-600 text-white p-2 rounded-lg">
+                            <Users size={24} />
+                        </span>
+                        <span className="font-bold text-lg text-blue-900">AttendanceHub</span>
                     </div>
-                    <h1
-                        className={cn(
-                            "text-xl font-bold text-sidebar-foreground whitespace-nowrap transition-opacity duration-300",
-                            showLabels ? "opacity-100" : "opacity-0",
-                        )}
+                    <button
+                        onClick={() => setOpen(false)}
+                        className="text-blue-900 hover:text-blue-700 p-1"
                     >
-                        AttendanceHub
-                    </h1>
+                        <X size={24} />
+                    </button>
                 </div>
 
-                {/* Navigation */}
-                <nav className="space-y-2">
-                    {navigationItems.map((item, index) => (
-                        <Button
-                            key={index}
-                            variant={currentPage === item.page ? "secondary" : "ghost"}
-                            className={cn(
-                                "w-full transition-all duration-300",
-                                showLabels ? "justify-start gap-2" : "justify-center px-2",
-                            )}
-                            aria-label={!showLabels ? item.label : undefined}
-                            onClick={() => onNavigate?.(item.page)}
+                {/* Desktop logo - ONLY visible on desktop */}
+                <div className="hidden lg:flex items-center justify-center p-4 mb-8">
+                    <span className="bg-blue-600 text-white p-2 rounded-lg">
+                        <Users size={32} />
+                    </span>
+                    <span className={`ml-3 font-bold text-lg text-blue-900 transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
+                        }`}>
+                        AttendanceHub
+                    </span>
+                </div>
+
+                {/* Navigation Menu */}
+                <nav className="flex flex-col gap-2 px-3 mt-4 lg:mt-0">
+                    {menuItems.map(item => (
+                        <Link
+                            to={item.to}
+                            key={item.label}
+                            className={`
+                flex items-center gap-3 px-3 py-3 rounded-lg font-medium transition-all duration-200
+                ${location.pathname === item.to
+                                    ? "bg-blue-600 text-white shadow-md"
+                                    : "hover:bg-blue-100 text-blue-900 hover:text-blue-700"
+                                }
+              `}
+                            onClick={() => setOpen(false)} // Close mobile menu on navigation
                         >
-                            <item.icon className="w-4 h-4 flex-shrink-0" />
-                            <span
-                                className={cn(
-                                    "whitespace-nowrap transition-opacity duration-300",
-                                    showLabels ? "opacity-100" : "opacity-0 w-0",
-                                )}
-                            >
+                            <span className="text-xl flex-shrink-0">{item.icon}</span>
+                            <span className={`
+                whitespace-nowrap transition-all duration-300
+                ${(isHovered || open) ? 'opacity-100 w-auto' : 'lg:opacity-0 lg:w-0 lg:overflow-hidden'}
+              `}>
                                 {item.label}
                             </span>
-                        </Button>
+                        </Link>
                     ))}
                 </nav>
-            </div>
-        </div>
-    )
+
+                {/* Logout button - positioned at bottom */}
+                <div className="absolute bottom-4 left-0 right-0 px-3">
+                    <button
+                        onClick={() => {
+                            logout();
+                            setOpen(false);
+                        }}
+                        className="flex items-center gap-3 w-full px-3 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-all duration-200"
+                    >
+                        <LogOut size={20} className="flex-shrink-0" />
+                        <span className={`
+              whitespace-nowrap transition-all duration-300
+              ${(isHovered || open) ? 'opacity-100 w-auto' : 'lg:opacity-0 lg:w-0 lg:overflow-hidden'}
+            `}>
+                            Logout
+                        </span>
+                    </button>
+                </div>
+            </aside>
+        </>
+    );
 }

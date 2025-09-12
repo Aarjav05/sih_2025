@@ -11,6 +11,7 @@ import PreviewOverlay from "../components/Attendance/PreviewOverlay"
 import MatchResultCard from "../components/Attendance/MatchResultCard"
 import StudentRollList from "../components/Attendance/StudentRollList"
 import ConfirmSessionModal from "../components/Attendance/ConfirmSessionModal"
+import ToastContainer from '../components/ToastContainer';
 
 // MOCK DATA - Replace with API calls
 const MOCK_CLASSES = [
@@ -98,6 +99,7 @@ const MOCK_CLASSES = [
 // ]
 
 export default function AttendancePage() {
+    const [successMessage, setSuccessMessage] = useState("");
     const [selectedClass, setSelectedClass] = useState("")
     const [selectedDate, setSelectedDate] = useState(new Date())
     const [currentStep, setCurrentStep] = useState("upload") // "upload" | "review"
@@ -155,7 +157,7 @@ export default function AttendancePage() {
         const base64Image = photos[0].base64 // Adjust this based on your UploadCapturePanel output
         const imageSizeMB = photos[0].size / (1024 * 1024);  // Convert bytes to MB
         setPhotoSize(imageSizeMB);
-        console.log("Base64 Image:", base64Image);  // Add this log
+        //console.log("Base64 Image:", base64Image);  // Add this log
 
         if (!base64Image) {                      // Add this check
             alert("Invalid image data. Please try again.");
@@ -276,15 +278,16 @@ export default function AttendancePage() {
 
         try {
             await confirmAttendance(sessionId, confirmations);
-            alert("Attendance recorded successfully.");
+            //alert for attendance recorded successfully
+            setSuccessMessage("Attendance recorded successfully.");
 
             // Reset states after successful confirm
-            setUploadedPhotos([]);
-            setCaptureResults([]);
-            setStudents([]);
-            setSessionId(null);
-            setCurrentStep("upload");
-            setShowConfirmModal(false);
+            // setUploadedPhotos([]);
+            // setCaptureResults([]);
+            // setStudents([]);
+            // setSessionId(null);
+            // setCurrentStep("upload");
+            // setShowConfirmModal(false);
         } catch (error) {
             console.error("Error confirming attendance:", error);
             alert("Failed to confirm attendance. Please try again.");
@@ -293,11 +296,19 @@ export default function AttendancePage() {
     };
 
 
-
+    const resetAttendanceState = () => {
+        setUploadedPhotos([]);
+        setCaptureResults([]);
+        setStudents([]);
+        setSessionId(null);
+        setCurrentStep("upload");
+        setShowConfirmModal(false);
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 p-4">
             <div className="max-w-7xl mx-auto">
+                {successMessage && <ToastContainer message={successMessage} />}
                 {/* Header */}
                 <div className="mb-6">
                     {/* Class and Date Selection */}
@@ -463,6 +474,8 @@ export default function AttendancePage() {
                     sessionSummary={sessionSummary}
                     selectedClass={selectedClass}
                     selectedDate={selectedDate}
+                    students={students}
+                    onReset={resetAttendanceState}
                 />
             </div>
         </div>

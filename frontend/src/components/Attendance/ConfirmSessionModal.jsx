@@ -1,14 +1,14 @@
-"use client"
-
+import { sendAbsenceSMS } from "../../api/attendance";
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { toast } from "sonner";
 import { CheckCircle, XCircle, Clock, Calendar, Users, FileText, MessageSquare, Download } from "lucide-react"
 import { format } from "date-fns"
-import { useToast } from "@/hooks/use-toast"
+
 
 export default function ConfirmSessionModal({
     isOpen,
@@ -17,21 +17,19 @@ export default function ConfirmSessionModal({
     sessionSummary,
     selectedClass,
     selectedDate,
+    students,
+    onReset
 }) {
     const [sessionNote, setSessionNote] = useState("")
     const [isConfirming, setIsConfirming] = useState(false)
     const [showExportOptions, setShowExportOptions] = useState(false)
-    const [showSMSOptions, setShowSMSOptions] = useState(false)
-    const { toast } = useToast()
+    const [isConfirmed, setIsConfirmed] = useState(false)
 
     const handleConfirm = async () => {
         setIsConfirming(true)
         try {
             await onConfirm(sessionNote)
-            toast({
-                title: "Attendance Confirmed",
-                description: "Session has been saved successfully.",
-            })
+            setIsConfirmed(true)
         } catch (error) {
             toast({
                 title: "Error",
@@ -43,39 +41,53 @@ export default function ConfirmSessionModal({
         }
     }
 
+    // Inside ConfirmSessionModal.jsx
     const handleExportCSV = () => {
-        // Mock CSV export functionality
-        const csvData = `Student Name,Status,Date,Class
-John Doe,Present,${format(selectedDate, "yyyy-MM-dd")},${selectedClass}
-Jane Smith,Absent,${format(selectedDate, "yyyy-MM-dd")},${selectedClass}`
+        // Compose columns and rows
+        const headers = ["Student Name", "Student ID", "Status", "Date", "Class"];
+        // If you pass `students` as a prop or have it available in context/props:
+        const rows = (students || []).map((student) => [
+            student.name,           // Student Name
+            student.student_id,     // Student ID
+            student.status,         // Status (present/absent/unmarked)
+            format(selectedDate, "yyyy-MM-dd"), // Date (date-fns formatting)
+            selectedClass           // Class
+        ]);
 
-        const blob = new Blob([csvData], { type: "text/csv" })
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = `attendance-${selectedClass}-${format(selectedDate, "yyyy-MM-dd")}.csv`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        window.URL.revokeObjectURL(url)
+        // Build CSV string
+        let csvContent = headers.join(",") + "\n";
+        rows.forEach(row => {
+            csvContent += row.join(",") + "\n";
+        });
 
-        toast({
-            title: "Export Complete",
-            description: "Attendance data has been exported to CSV.",
-        })
-        setShowExportOptions(false)
-    }
+        // Download trigger
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `attendance-${selectedClass}-${format(selectedDate, "yyyy-MM-dd")}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    };
 
-    const handleSendSMS = () => {
-        // Mock SMS functionality
-        toast({
-            title: "SMS Sent",
-            description: `Absence notifications sent to ${sessionSummary.absentCount} parents.`,
-        })
-        setShowSMSOptions(false)
-    }
 
     if (!isOpen) return null
+
+    if (isConfirmed) {
+        return (
+            <SuccessModal
+                isOpen={isOpen}
+                onClose={onClose}
+                sessionSummary={sessionSummary}
+                selectedClass={selectedClass}
+                selectedDate={selectedDate}
+                onExportCSV={handleExportCSV}
+                onReset={onReset}
+            />
+        )
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -202,54 +214,12 @@ Jane Smith,Absent,${format(selectedDate, "yyyy-MM-dd")},${selectedClass}`
                                         <FileText className="h-4 w-4 mr-2" />
                                         Export as CSV
                                     </Button>
-                                    <Button
-                                        onClick={() => {
-                                            // Mock PDF export
-                                            toast({
-                                                title: "PDF Export",
-                                                description: "PDF export functionality coming soon.",
-                                            })
-                                        }}
-                                        className="w-full justify-start"
-                                        variant="outline"
-                                    >
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        Export as PDF
-                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
                     )}
 
-                    {/* SMS Options */}
-                    {showSMSOptions && (
-                        <Card className="border-blue-200 bg-blue-50">
-                            <CardContent className="p-4">
-                                <h4 className="font-medium mb-3 flex items-center gap-2">
-                                    <MessageSquare className="h-4 w-4" />
-                                    SMS Notifications
-                                </h4>
-                                <div className="space-y-3">
-                                    <p className="text-sm text-gray-600">
-                                        Send absence notifications to parents of {sessionSummary.absentCount} absent students.
-                                    </p>
-                                    <Textarea
-                                        placeholder="Your child was absent from class today. Please contact the school if this is an error."
-                                        rows={3}
-                                        className="resize-none"
-                                    />
-                                    <div className="flex gap-2">
-                                        <Button onClick={handleSendSMS} className="bg-blue-600 hover:bg-blue-700">
-                                            Send SMS
-                                        </Button>
-                                        <Button variant="outline" onClick={() => setShowSMSOptions(false)}>
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
+
 
                     {/* Warnings */}
                     {sessionSummary.unmatchedCount > 0 && (
@@ -281,16 +251,6 @@ Jane Smith,Absent,${format(selectedDate, "yyyy-MM-dd")},${selectedClass}`
                             <Download className="h-4 w-4 mr-2" />
                             Export
                         </Button>
-                        {sessionSummary.absentCount > 0 && (
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowSMSOptions(!showSMSOptions)}
-                                className="flex-1 sm:flex-none bg-transparent"
-                            >
-                                <MessageSquare className="h-4 w-4 mr-2" />
-                                SMS
-                            </Button>
-                        )}
                     </div>
 
                     {/* Primary Actions */}
@@ -311,6 +271,141 @@ Jane Smith,Absent,${format(selectedDate, "yyyy-MM-dd")},${selectedClass}`
                             {isConfirming ? "Confirming..." : "Confirm Session"}
                         </Button>
                     </div>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+// NEW: Success Modal Component
+function SuccessModal({ isOpen, onClose, sessionSummary, selectedClass, selectedDate, onExportCSV, onReset }) {
+    const [showSMSOptions, setShowSMSOptions] = useState(false)
+    const [isSendingSMS, setIsSendingSMS] = useState(false)
+
+    const handleSendSMS = async () => {
+        setIsSendingSMS(true)
+        try {
+            await sendAbsenceSMS({
+                message: "Your child was absent from class today. Please contact the school if this is an error.",
+                targetClass: selectedClass
+            });
+            toast.success(`Absence notifications sent to ${sessionSummary.absentCount} parents.`, {
+                duration: 3000,
+            });
+            setShowSMSOptions(false);
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Failed to send absence notifications.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSendingSMS(false)
+        }
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="max-w-lg">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="h-5 w-5" />
+                        Attendance Session Confirmed!
+                    </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                    <Card className="bg-green-50 border-green-200">
+                        <CardContent className="p-4 text-center">
+                            <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2" />
+                            <h3 className="font-medium text-green-800">Session Saved Successfully</h3>
+                            <p className="text-sm text-green-700">
+                                Attendance for {selectedClass} on {format(selectedDate, "MMM dd, yyyy")} has been recorded.
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    {/* Summary */}
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                            <div className="text-lg font-bold text-green-600">{sessionSummary.presentCount}</div>
+                            <div className="text-xs text-gray-600">Present</div>
+                        </div>
+                        <div>
+                            <div className="text-lg font-bold text-red-600">{sessionSummary.absentCount}</div>
+                            <div className="text-xs text-gray-600">Absent</div>
+                        </div>
+                        <div>
+                            <div className="text-lg font-bold text-orange-600">{sessionSummary.unmatchedCount}</div>
+                            <div className="text-xs text-gray-600">Unmatched</div>
+                        </div>
+                    </div>
+
+                    {/* SMS Options - Only show if there are absent students */}
+                    {sessionSummary.absentCount > 0 && (
+                        <>
+                            {!showSMSOptions ? (
+                                <Card className="border-blue-200 bg-blue-50">
+                                    <CardContent className="p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h4 className="font-medium text-blue-800">Send Absence Notifications</h4>
+                                                <p className="text-sm text-blue-700">
+                                                    Notify parents of {sessionSummary.absentCount} absent students via SMS
+                                                </p>
+                                            </div>
+                                            <Button
+                                                onClick={() => setShowSMSOptions(true)}
+                                                size="sm"
+                                                className="bg-blue-600 hover:bg-blue-700"
+                                            >
+                                                <MessageSquare className="h-4 w-4 mr-1" />
+                                                Send SMS
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <Card className="border-blue-200 bg-blue-50">
+                                    <CardContent className="p-4">
+                                        <h4 className="font-medium text-blue-800 mb-2">SMS Notifications</h4>
+                                        <p className="text-sm text-blue-700 mb-4">
+                                            Send absence notifications to parents of {sessionSummary.absentCount} absent students.
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                onClick={handleSendSMS}
+                                                disabled={isSendingSMS}
+                                                size="sm"
+                                                className="bg-blue-600 hover:bg-blue-700"
+                                            >
+                                                {isSendingSMS ? "Sending..." : "Send SMS"}
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => setShowSMSOptions(false)}
+                                                size="sm"
+                                            >
+                                                Cancel
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={onExportCSV}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export CSV
+                    </Button>
+                    <Button onClick={() => {
+                        onReset();
+                    }} className="bg-green-600 hover:bg-green-700">
+                        Done
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

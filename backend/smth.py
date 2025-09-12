@@ -357,7 +357,7 @@ def match_faces_to_students(face_encodings, class_name, school_id):
 
 # SMS Communication Routes
 @app.route('/api/sms/send', methods=['POST'])
-@require_role(['principal'])
+@require_role(['principal','teacher'])
 @require_school_access
 def send_sms(user):
     try:
@@ -436,7 +436,7 @@ def send_sms(user):
         return jsonify({'error': 'Failed to send SMS'}), 500
 
 @app.route('/api/sms/history', methods=['GET'])
-@require_role(['principal'])
+@require_role(['principal','teacher'])
 def sms_history(user):
     try:
         history = SMSHistory.query.filter_by(school_id=user.school_id).order_by(SMSHistory.sent_at.desc()).limit(50).all()
@@ -561,7 +561,7 @@ def get_teachers(user):
 
 # Analytics Routes
 @app.route('/api/analytics/school', methods=['GET'])
-@require_role(['principal'])
+@require_role(['principal','teacher'])
 def school_analytics(user):
     try:
         start_date_str = request.args.get('start_date')
@@ -752,7 +752,7 @@ def get_class_students(user, class_name):
     
 # Atharva added new route
 @app.route('/api/students/school/summary', methods=['GET'])
-@require_role(['principal', 'district'])
+@require_role(['principal', 'district','teacher'])
 @require_school_access
 def school_students_summary(user):
     try:
@@ -833,27 +833,39 @@ def confirm_attendance(user):
         data = request.get_json()
         session_id = data.get('session_id')
         confirmations = data.get('confirmations', [])
-        
+
         if not session_id:
             return jsonify({'error': 'Session ID required'}), 400
-        
+
+        # Get the PhotoUpload session for class and school info
         photo_session = PhotoUpload.query.filter_by(session_id=session_id).first()
         if not photo_session or (photo_session.school_id != user.school_id and user.role != 'district'):
             return jsonify({'error': 'Invalid session or access denied'}), 404
-        
-        today = datetime.utcnow().date()
-        AttendanceRecord.query.filter_by(date=today, session_id=session_id).delete()
 
-        # Atharva added
+        today = datetime.utcnow().date()
+        class_name = photo_session.class_name
+        school_id = photo_session.school_id
+
+        # Get all student IDs in the class for this school
+        student_ids = [
+            s.id for s in Student.query.filter_by(
+                class_name=class_name, school_id=school_id, is_active=True
+            ).all()
+        ]
+
+        # Delete any existing attendance records for these students on today's date
+        AttendanceRecord.query.filter(
+            AttendanceRecord.student_id.in_(student_ids),
+            AttendanceRecord.date == today,
+        ).delete(synchronize_session=False)
         db.session.commit()
-        
+
         records_created = 0
-        
         for conf in confirmations:
             student = Student.query.filter_by(student_id=conf.get('student_id')).first()
-            if not student or student.school_id != user.school_id:
+            if not student or student.school_id != school_id:
                 continue
-            
+
             record = AttendanceRecord(
                 student_id=student.id,
                 date=today,
@@ -865,15 +877,54 @@ def confirm_attendance(user):
             )
             db.session.add(record)
             records_created += 1
-        
+
         db.session.commit()
-        logger.info(f"Attendance confirmed for {records_created} students by {user.name}")
+        logger.info(f"Attendance confirmed for {records_created} students for {class_name} on {today} by {user.name}")
         return jsonify({'message': f'Attendance recorded for {records_created} students', 'records_created': records_created})
-        
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error confirming attendance: {str(e)}")
         return jsonify({'error': 'Failed to confirm attendance'}), 500
+
+
+# Atharva added new route
+@app.route("/api/attendance/watchlist", methods=["GET"])
+@require_role(['principal','teacher'])
+def attendance_watchlist(user):
+    try:
+        threshold = float(request.args.get("threshold", 75))
+        days = int(request.args.get("days", 30))
+        class_name = request.args.get("class_name")  # New!
+        end_date = datetime.utcnow().date()
+        start_date = end_date - timedelta(days=days)
+        # Filter students
+        students_query = Student.query.filter_by(school_id=user.school_id, is_active=True)
+        if class_name:
+            students_query = students_query.filter_by(class_name=class_name)
+
+        students = students_query.all()
+        watchlist = []
+        for student in students:
+            records = AttendanceRecord.query.filter(
+                AttendanceRecord.student_id == student.id,
+                AttendanceRecord.date >= start_date,
+                AttendanceRecord.date <= end_date
+            ).all()
+            total_days = len(records)
+            present_days = sum(1 for r in records if r.status == "present")
+            attendance_rate = (present_days / total_days) * 100 if total_days > 0 else 0
+            if attendance_rate < threshold:
+                watchlist.append({
+                    "name": student.name,
+                    "class": student.class_name,
+                    "attendance": round(attendance_rate, 1)
+                })
+        return jsonify({"watchlist": watchlist})
+    except Exception as e:
+        logger.error(f"Error generating attendance watchlist: {str(e)}")
+        return jsonify({'error': 'Failed to generate attendance watchlist'}), 500
+
 
 # Reporting Routes
 @app.route('/api/reports/daily/<date>', methods=['GET'])

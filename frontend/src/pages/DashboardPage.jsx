@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { fetchTodayAttendance } from "../api/attendance"
-import { fetchAttendanceAreaChartData, fetchGenderData, getTotalStudents, attendanceByClass, todayAttendanceTotals, fetchPresentToday, avgAttendanceAndBestClass } from "../api/dashboard";
+import { fetchAttendanceAreaChartData, fetchGenderData, getTotalStudents, attendanceByClass, todayAttendanceTotals, fetchPresentToday, avgAttendanceAndBestClass, fetchLowAttendanceWatchlist } from "../api/dashboard";
 import {
     Select,
     SelectContent,
@@ -43,6 +43,10 @@ export default function Dashboard() {
     const [timeRange, setTimeRange] = useState("7d")
     const [pieData, setPieData] = useState([]);
 
+    const [watchlistStudents, setWatchlistStudents] = useState([]);
+    const [watchlistClasses, setWatchlistClasses] = useState([]);
+    const [selectedWatchlistClass, setSelectedWatchlistClass] = useState("class-1");
+
 
     // Mock data - replace with real API calls
     // const kpiData = {
@@ -60,36 +64,32 @@ export default function Dashboard() {
     ]
 
 
-    const recentSMS = [
-        { message: "Attendance reminder for tomorrow's exam", timestamp: "2 hours ago" },
-        { message: "Parent-teacher meeting scheduled", timestamp: "4 hours ago" },
-        { message: "Holiday announcement for next week", timestamp: "1 day ago" },
-    ]
+    // const recentSMS = [
+    //     { message: "Attendance reminder for tomorrow's exam", timestamp: "2 hours ago" },
+    //     { message: "Parent-teacher meeting scheduled", timestamp: "4 hours ago" },
+    //     { message: "Holiday announcement for next week", timestamp: "1 day ago" },
+    // ]
 
-    const watchlistStudents = [
-        { name: "John Smith", class: "Class 9A", attendance: 65 },
-        { name: "Sarah Johnson", class: "Class 8B", attendance: 58 },
-        { name: "Mike Wilson", class: "Class 10C", attendance: 72 },
-    ]
 
-    const recentSessions = [
-        {
-            id: 1,
-            timestamp: "Today, 9:15 AM",
-            uploader: "Mrs. Anderson",
-            class: "Class 10A",
-            facesDetected: 28,
-            status: "completed",
-        },
-        {
-            id: 2,
-            timestamp: "Today, 8:45 AM",
-            uploader: "Mr. Johnson",
-            class: "Class 9B",
-            facesDetected: 25,
-            status: "processing",
-        },
-    ]
+    // const recentSessions = [
+    //     {
+    //         id: 1,
+    //         timestamp: "Today, 9:15 AM",
+    //         uploader: "Mrs. Anderson",
+    //         class: "Class 10A",
+    //         facesDetected: 28,
+    //         status: "completed",
+    //     },
+    //     {
+    //         id: 2,
+    //         timestamp: "Today, 8:45 AM",
+    //         uploader: "Mr. Johnson",
+    //         class: "Class 9B",
+    //         facesDetected: 25,
+    //         status: "processing",
+    //     },
+    // ]
+
     useEffect(() => {
         async function fetchKPIsandGraphData() {
             try {
@@ -120,8 +120,22 @@ export default function Dashboard() {
                 console.error("Error fetching KPIs:", error);
             }
         }
+
         fetchKPIsandGraphData();
     }, []);
+
+    useEffect(() => {
+        async function fetchWatchlist() {
+            try {
+                const students = await fetchLowAttendanceWatchlist(75, 30, selectedWatchlistClass);
+                setWatchlistStudents(students);
+            } catch (err) {
+                console.error("Error fetching watchlist:", err);
+                setWatchlistStudents([]);
+            }
+        }
+        fetchWatchlist();
+    }, [selectedWatchlistClass]);
 
 
     useEffect(() => {
@@ -258,7 +272,15 @@ export default function Dashboard() {
                 <ChartBar data={attendanceByClassData} />
 
                 {/* Watchlist */}
-                <Watchlist students={watchlistStudents} />
+                <Watchlist
+                    students={watchlistStudents}
+                    onUpdate={async () => {
+                        const students = await fetchLowAttendanceWatchlist(75, 30, watchlistClass);
+                        setWatchlistStudents(students);
+                    }}
+                    selectedWatchClass={selectedWatchlistClass}
+                    setSelectedWatchClass={setSelectedWatchlistClass}
+                />
             </div>
 
             {/* Gender Chart with Demo Toggle */}

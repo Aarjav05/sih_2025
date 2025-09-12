@@ -147,9 +147,9 @@ const StudentDashboard = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const token = getToken();
-      
+
       if (!token) {
         setError('Please login first. No JWT token found.');
         setLoading(false);
@@ -161,7 +161,7 @@ const StudentDashboard = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       setStudents(response.data.students);
       // Auto-select the first student if none is selected
       if (response.data.students.length > 0 && !currentStudent) {
@@ -294,7 +294,7 @@ const StudentDashboard = () => {
       <div className="flex h-screen bg-gray-50 font-sans items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 text-lg mb-4">{error}</div>
-          <button 
+          <button
             onClick={handleRefresh}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition-colors"
           >
@@ -317,19 +317,19 @@ const StudentDashboard = () => {
                 type="text"
                 placeholder="Full Name"
                 value={newStudent.name}
-                onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
+                onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded"
               />
               <input
                 type="text"
                 placeholder="Student ID"
                 value={newStudent.student_id}
-                onChange={(e) => setNewStudent({...newStudent, student_id: e.target.value})}
+                onChange={(e) => setNewStudent({ ...newStudent, student_id: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded"
               />
               <select
                 value={newStudent.class_name}
-                onChange={(e) => setNewStudent({...newStudent, class_name: e.target.value})}
+                onChange={(e) => setNewStudent({ ...newStudent, class_name: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded"
               >
                 <option value="class-1">Class 1</option>
@@ -340,7 +340,7 @@ const StudentDashboard = () => {
               </select>
               <select
                 value={newStudent.gender}
-                onChange={(e) => setNewStudent({...newStudent, gender: e.target.value})}
+                onChange={(e) => setNewStudent({ ...newStudent, gender: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded"
               >
                 <option value="Male">Male</option>
@@ -351,20 +351,20 @@ const StudentDashboard = () => {
                 type="text"
                 placeholder="Guardian Name"
                 value={newStudent.guardian_name}
-                onChange={(e) => setNewStudent({...newStudent, guardian_name: e.target.value})}
+                onChange={(e) => setNewStudent({ ...newStudent, guardian_name: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded"
               />
               <input
                 type="text"
                 placeholder="Guardian Phone"
                 value={newStudent.guardian_phone}
-                onChange={(e) => setNewStudent({...newStudent, guardian_phone: e.target.value})}
+                onChange={(e) => setNewStudent({ ...newStudent, guardian_phone: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded"
               />
               <textarea
                 placeholder="Health Notes (Optional)"
                 value={newStudent.health_notes}
-                onChange={(e) => setNewStudent({...newStudent, health_notes: e.target.value})}
+                onChange={(e) => setNewStudent({ ...newStudent, health_notes: e.target.value })}
                 className="w-full p-2 border border-gray-300 rounded"
                 rows="2"
               />
@@ -397,12 +397,12 @@ const StudentDashboard = () => {
       )}
 
       {/* Sidebar */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-lg">
+      <div className="w-80 bg-white border-r rounded-2xl border-gray-200 flex flex-col shadow-lg">
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-800">Student Portal</h2>
           <div className="flex items-center gap-2">
-            <select 
-              value={selectedClass} 
+            <select
+              value={selectedClass}
               onChange={handleClassChange}
               className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
             >
@@ -466,11 +466,10 @@ const StudentDashboard = () => {
           {filteredStudents.map((student) => (
             <div
               key={student.id}
-              className={`flex items-center p-4 cursor-pointer transition-all duration-300 rounded-xl mb-2 ${
-                currentStudent && student.id === currentStudent.id 
-                  ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-[1.02]" 
-                  : "hover:bg-gray-100 hover:shadow-md"
-              }`}
+              className={`flex items-center p-4 cursor-pointer transition-all duration-300 rounded-xl mb-2 ${currentStudent && student.id === currentStudent.id
+                ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-[1.02]"
+                : "hover:bg-gray-100 hover:shadow-md"
+                }`}
               onClick={() => setCurrentStudent(student)}
             >
               <div className="w-12 h-12 rounded-full mr-4 bg-gray-200 flex items-center justify-center text-gray-400 overflow-hidden">
@@ -608,11 +607,10 @@ const StudentDashboard = () => {
               {["progress", "attendance", "fees", "bus"].map((tab) => (
                 <button
                   key={tab}
-                  className={`px-8 py-4 text-sm font-medium border-b-2 transition-all duration-300 ${
-                    activeTab === tab
-                      ? "text-blue-600 border-blue-600 bg-blue-50"
-                      : "text-gray-500 border-transparent hover:text-blue-600 hover:bg-gray-50"
-                  }`}
+                  className={`px-8 py-4 text-sm font-medium border-b-2 transition-all duration-300 ${activeTab === tab
+                    ? "text-blue-600 border-blue-600 bg-blue-50"
+                    : "text-gray-500 border-transparent hover:text-blue-600 hover:bg-gray-50"
+                    }`}
                   onClick={() => setActiveTab(tab)}
                 >
                   {tab === "progress" && "Academic Progress"}
