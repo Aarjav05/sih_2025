@@ -3,6 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+body {
+  font-family: "Open Sans", sans-serif;
+  font-optical-sizing: auto;
+}
+
+
+
 :root {
   --chart-1: #2979FF;  /* blue for present */
   --chart-2: #FF5252;  /* red for absent */

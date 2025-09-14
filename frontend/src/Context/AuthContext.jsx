@@ -12,6 +12,9 @@ export function AuthProvider({ children }) {
         setUser(userObject);
         localStorage.setItem("user", JSON.stringify(userObject));
         localStorage.setItem("access_token", token);
+        if (userObject.role) {
+            localStorage.setItem("user_role", userObject.role);
+        }
     };
 
     const logout = () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, Link } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { fetchTodayAttendance } from "../api/attendance"
 import { fetchAttendanceAreaChartData, fetchGenderData, getTotalStudents, attendanceByClass, todayAttendanceTotals, fetchPresentToday, avgAttendanceAndBestClass, fetchLowAttendanceWatchlist } from "../api/dashboard";
@@ -30,7 +30,7 @@ import { max } from "date-fns";
 
 
 export default function Dashboard() {
-    const [selectedClass, setSelectedClass] = useState("");
+    const [selectedClass, setSelectedClass] = useState("class-1");
     const [genderChartData, setGenderChartData] = useState([]);
     const [includeAttendance, setIncludeAttendance] = useState(false);
     const [attendanceData, setAttendanceData] = useState([]);
@@ -40,7 +40,7 @@ export default function Dashboard() {
     const [presentToday, setPresentToday] = useState({ count: 0, percent: 0 });
     const [attendanceByClassData, setAttendanceByClassData] = useState([]);
     const [areaChartData, setAreaChartData] = useState([]);
-    const [timeRange, setTimeRange] = useState("7d")
+    const [timeRange, setTimeRange] = useState(15)
     const [pieData, setPieData] = useState([]);
 
     const [watchlistStudents, setWatchlistStudents] = useState([]);
@@ -64,11 +64,11 @@ export default function Dashboard() {
     ]
 
 
-    // const recentSMS = [
-    //     { message: "Attendance reminder for tomorrow's exam", timestamp: "2 hours ago" },
-    //     { message: "Parent-teacher meeting scheduled", timestamp: "4 hours ago" },
-    //     { message: "Holiday announcement for next week", timestamp: "1 day ago" },
-    // ]
+    const recentSMS = [
+        { message: "Attendance reminder for tomorrow's exam", timestamp: "2 hours ago" },
+        { message: "Parent-teacher meeting scheduled", timestamp: "4 hours ago" },
+        { message: "Holiday announcement for next week", timestamp: "1 day ago" },
+    ]
 
 
     // const recentSessions = [
@@ -106,9 +106,10 @@ export default function Dashboard() {
                 const { presentCount, percentToday } = await fetchPresentToday();
                 setPresentToday({ count: presentCount, percent: percentToday });
 
-                const rangeMap = { "7d": 7, "15d": 15, "30d": 30 };
-                const rangeDays = rangeMap[timeRange] ?? 7;
-                const data = await fetchAttendanceAreaChartData(rangeDays);
+                // const rangeMap = { "7d": 7, "15d": 15, "30d": 30 };
+                // const rangeDays = rangeMap[timeRange] ?? 7;
+                const data = await fetchAttendanceAreaChartData(30);
+                // console.log("Chart area data in dashboardPage.jsx: ", data);
                 setAreaChartData(data);
 
                 const pie = await todayAttendanceTotals();
@@ -127,7 +128,7 @@ export default function Dashboard() {
     useEffect(() => {
         async function fetchWatchlist() {
             try {
-                const students = await fetchLowAttendanceWatchlist(75, 30, selectedWatchlistClass);
+                const students = await fetchLowAttendanceWatchlist(80, 30, selectedWatchlistClass);
                 setWatchlistStudents(students);
             } catch (err) {
                 console.error("Error fetching watchlist:", err);
@@ -154,6 +155,7 @@ export default function Dashboard() {
                 }
 
                 const genderData = await fetchGenderData(selectedClass, includeAttendance, attendanceRecords);
+                console.log("Gender data recieved in DashboardPage.jsx", genderData);
                 setGenderChartData(genderData);
 
             } catch (error) {
@@ -173,29 +175,29 @@ export default function Dashboard() {
                 <KpiCard icon={Users}
                     title="Total Students"
                     value={totalStudents} />
-                <KpiCard icon={TrendingUp}
+                {/* <KpiCard icon={TrendingUp}
                     title="Avg Attendance(30d)"
-                    value={`${averageAttendance}%`} />
+                    value={`${averageAttendance}%`} /> */}
                 <KpiCard
                     icon={UserCheck}
                     title="Present Today"
                     value={`${presentToday.count} (${presentToday.percent}%)`}
                 />
-                <KpiCard icon={Award}
+                {/* <KpiCard icon={Award}
                     title="Best Performing Class"
-                    value={bestClass} />
+                    value={bestClass} /> */}
             </div>
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 {/* Area Chart - 2/3 width */}
                 <div className="lg:col-span-2 space-y-4">
-                    <ChartArea data={areaChartData} timeRange={timeRange} onTimeRangeChange={setTimeRange} />
+                    <ChartArea data={areaChartData} timeRange={parseInt(timeRange)} onTimeRangeChange={val => setTimeRange(`${val}d`)} />
                     {/* Gender Chart with Demo Toggle */}
-                    <div className="mb-2">
+                    <div className="mb-2 rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
                         <Card>
                             <CardHeader className="flex justify-between items-center">
-                                <CardTitle>Students by Gender</CardTitle>
+                                <CardTitle className="font-medium text-lg md:text-xl lg:text-2xl" >Students by Gender</CardTitle>
                                 <Select value={selectedClass} onValueChange={setSelectedClass}>
                                     <SelectTrigger className="w-full sm:w-48">
                                         <SelectValue placeholder="Choose class..." />
@@ -229,14 +231,14 @@ export default function Dashboard() {
                     <ChartPie data={pieData} />
 
                     {/* Quick Actions */}
-                    <Card className="max-h-fit">
+                    <Card className="max-h-fit rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
                         <CardHeader>
                             <CardTitle className="text-lg">Quick Actions</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <Button className="w-full justify-start gap-2">
                                 <Play className="w-4 h-4" />
-                                Start Attendance
+                                <a href="/attendance">Start Attendance</a>
                             </Button>
                             <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
                                 <Send className="w-4 h-4" />
@@ -244,13 +246,13 @@ export default function Dashboard() {
                             </Button>
                             <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
                                 <UserPlus className="w-4 h-4" />
-                                Add Student
+                                <a href="/students">Add Student</a>
                             </Button>
                         </CardContent>
                     </Card>
 
-                    {/* Recent SMS
-                    <Card>
+                    Recent SMS
+                    <Card className="rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
                         <CardHeader>
                             <CardTitle className="text-lg">Recent SMS</CardTitle>
                         </CardHeader>
@@ -262,7 +264,7 @@ export default function Dashboard() {
                                 </div>
                             ))}
                         </CardContent>
-                    </Card> */}
+                    </Card>
                 </div>
             </div>
 

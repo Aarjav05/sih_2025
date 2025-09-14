@@ -11,7 +11,10 @@ import { format } from "date-fns"
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts"
 import { useToast } from "@/hooks/use-toast";
 
-import { fetchSchoolAnalytics, fetchDistrictOverview } from "../api/analytics";
+import { useAuth } from "../Context/AuthContext"
+
+import { fetchSchoolAnalytics, fetchDistrictOverview, fetchSchoolClasses, fetchSchoolClassStudents } from "../api/analytics";
+import { use } from "react"
 
 // const fetchSchoolAnalytics = async (token, startDate, endDate) => {
 //     // Simulate API delay
@@ -102,11 +105,11 @@ function DatePicker({ value, onChange, placeholder = "Select date" }) {
 
 function KpiCard({ title, value, icon: Icon, trend, description }) {
     return (
-        <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
+        <Card className="shadow-md hover:shadow-lg transition-all ease-in bg-gradient-to-t from-blue-100 to-white">
+            <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                     <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+                        <p className="text-md lg:text-xl font-medium text-foreground">{title}</p>
                         <div className="flex items-center space-x-2">
                             <p className="text-2xl font-bold">{value}</p>
                             {trend && (
@@ -131,13 +134,23 @@ export default function AnalyticsPage() {
     const [startDate, setStartDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
     const [analytics, setAnalytics] = useState(null);
+
     const [districtOverview, setDistrictOverview] = useState(null);
+    const [selectedSchoolId, setSelectedSchoolId] = useState();
+    const [schoolClasses, setSchoolClasses] = useState([]);
+    const [selectedClass, setSelectedClass] = useState();
+    const [students, setStudents] = useState([]);
+
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null)
     const { toast } = useToast();
 
+    const { user } = useAuth();
+    const userRole = user?.role || localStorage.getItem("user_role");
+    console.log("Role is: ", userRole);
 
-    const token = localStorage.getItem("token");
-    const userRole = localStorage.getItem("role");
+    //const token = localStorage.getItem("token");
+
 
     useEffect(() => {
         async function loadAnalytics() {
@@ -146,12 +159,12 @@ export default function AnalyticsPage() {
 
             try {
                 if (userRole === "district") {
-                    const data = await fetchDistrictOverview(token);
+                    const data = await fetchDistrictOverview();
+                    console.log("District data from backend: ", data);
                     setDistrictOverview(data);
                     setAnalytics(null);
                 } else {
                     const data = await fetchSchoolAnalytics(
-                        token,
                         startDate ? format(startDate, "yyyy-MM-dd") : null,
                         endDate ? format(endDate, "yyyy-MM-dd") : null
                     );
@@ -170,7 +183,26 @@ export default function AnalyticsPage() {
         }
 
         loadAnalytics();
-    }, [startDate, endDate, token, userRole])
+    }, [startDate, endDate, userRole])
+
+    useEffect(() => {
+        if (selectedSchoolId) {
+            fetchSchoolClasses(selectedSchoolId).then(res => {
+                setSchoolClasses(res.classes);
+                setSelectedClass(""); // reset on school change
+                setStudents([]);
+            });
+        }
+    }, [selectedSchoolId]);
+
+    useEffect(() => {
+        if (selectedSchoolId && selectedClass) {
+            fetchSchoolClassStudents(selectedSchoolId, selectedClass).then(res => {
+                setStudents(res.students);
+            });
+        }
+    }, [selectedSchoolId, selectedClass]);
+
 
     const chartData =
         analytics?.daily_attendance?.map(({ date, attendance_rate }) => ({
@@ -180,7 +212,7 @@ export default function AnalyticsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50/50">
-            <div className="p-6 space-y-6 max-w-7xl mx-auto">
+            <div className="p-2 space-y-6 max-w-7xl mx-auto">
                 <div className="space-y-4">
                     <div className="flex items-center space-x-2">
                         <BarChart3 className="h-8 w-8 text-blue-600" />
@@ -208,6 +240,7 @@ export default function AnalyticsPage() {
                         )}
                     </div>
                 </div>
+                <hr className="w-full h-1.5 mb-4" />
 
                 {error && (
                     <Alert variant="destructive">
@@ -268,7 +301,7 @@ export default function AnalyticsPage() {
                             />
                         </div>
 
-                        <Card>
+                        <Card className="shadow-xl hover:shadow-2xl transition-all ease-in">
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
                                     <TrendingUp className="h-5 w-5" />
@@ -308,7 +341,7 @@ export default function AnalyticsPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className="shadow-xl hover:shadow-2xl transition-all ease-in">
                             <CardHeader>
                                 <CardTitle className="flex items-center space-x-2">
                                     <GraduationCap className="h-5 w-5" />
@@ -383,6 +416,63 @@ export default function AnalyticsPage() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <div className="my-6 p-4 bg-white rounded-md border">
+                            <div className="flex gap-4 mb-4">
+                                {/* School dropdown */}
+                                <select
+                                    className="border p-2 rounded"
+                                    value={selectedSchoolId || ""}
+                                    onChange={e => setSelectedSchoolId(e.target.value)}
+                                >
+                                    <option value="">Select School</option>
+                                    {districtOverview.schools.map(school => (
+                                        <option key={school.school_id} value={school.school_id}>
+                                            {school.school_name}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {/* Class dropdown */}
+                                {schoolClasses.length > 0 && (
+                                    <select
+                                        className="border p-2 rounded"
+                                        value={selectedClass || ""}
+                                        onChange={e => setSelectedClass(e.target.value)}
+                                    >
+                                        <option value="">Select Class</option>
+                                        {schoolClasses.map(className => (
+                                            <option key={className} value={className}>
+                                                {className}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
+
+                            {/* Student list conditional */}
+                            {selectedClass && (
+                                <div className="rounded-md border p-4 max-h-72 overflow-auto">
+                                    <h3 className="text-base font-semibold mb-2">Students in {selectedClass}</h3>
+                                    <ul className="divide-y divide-gray-100">
+                                        {students.length > 0 ? (
+                                            students.map(student => (
+                                                <li
+                                                    key={student.id}
+                                                    className="flex justify-between py-2 text-sm"
+                                                >
+                                                    <span>{student.name}</span>
+                                                    <span className="text-gray-500">ID: {student.student_id}</span>
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <li className="py-2 text-center text-gray-400">No students found.</li>
+                                        )}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
 
                         <Card>
                             <CardHeader>

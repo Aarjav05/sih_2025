@@ -1,151 +1,187 @@
-"use client"
-
+import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Eye, RotateCcw, Trash2, ImageIcon } from "lucide-react"
 
-export default function CaptureGallery({ photos, selectedPhoto, onPhotoSelect, onRetakePhoto, onRemovePhoto }) {
+export default function CaptureGallery({ photos, selectedPhoto, onPhotoSelect, onPhotosUploaded, onRetakePhoto, onRemovePhoto }) {
+    const fileInputRef = useRef(null);
+
+    // Trigger hidden file input click
+    const handleAddMoreClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    // Convert files to base64 and send to parent handler
+    const handleFilesSelected = async (event) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        // Convert files to photo objects with base64 strings
+        const photosWithBase64 = await Promise.all(
+            Array.from(files).map(async (file, index) => {
+                const base64 = await toBase64(file);
+                return {
+                    id: `p${Date.now()}_${index}`,
+                    file,
+                    url: URL.createObjectURL(file),
+                    name: file.name,
+                    size: file.size,
+                    base64,
+                };
+            })
+        );
+
+        // Pass new photos up to parent (AttendancePage)
+        onPhotosUploaded(photosWithBase64);
+
+        // Reset file input to allow re-upload of same files if needed
+        event.target.value = null;
+    };
+
+
+
     if (!photos || photos.length === 0) {
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg">Uploaded Photos</CardTitle>
+                    <CardTitle>Uploaded Photos</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex items-center justify-center p-8 text-gray-500">
-                        <div className="text-center">
-                            <ImageIcon className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                            <p>No photos uploaded yet</p>
-                        </div>
+                    No photos uploaded yet
+                    <div className="mt-4">
+                        <Button onClick={handleAddMoreClick} variant="outline" size="sm">
+                            <ImageIcon className="mr-2 h-4 w-4" /> Add Photos
+                        </Button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleFilesSelected}
+                            style={{ display: "none" }}
+                        />
                     </div>
                 </CardContent>
             </Card>
-        )
+        );
     }
+
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg">Uploaded Photos ({photos.length})</CardTitle>
+                <CardTitle>Uploaded Photos ({photos.length})</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div className="flex flex-wrap gap-4">
                     {photos.map((photo) => (
                         <div
                             key={photo.id}
-                            className={`
-                relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all
-                ${selectedPhoto?.id === photo.id ? "border-purple-500 ring-2 ring-purple-200" : "border-gray-200 hover:border-purple-300"}
-              `}
+                            className={`relative cursor-pointer rounded border p-1 ${selectedPhoto?.id === photo.id ? "border-purple-500" : "border-gray-300"
+                                }`}
                             onClick={() => onPhotoSelect(photo)}
+                            title={photo.name}
                         >
-                            {/* Photo Thumbnail */}
-                            <div className="aspect-square bg-gray-100">
-                                <img
-                                    src={photo.url || "/placeholder.svg"}
-                                    alt={photo.name}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                />
+                            {/* Thumbnail */}
+                            <img
+                                src={photo.url}
+                                alt={photo.name}
+                                className="h-24 w-24 object-cover rounded-sm"
+                            />
+
+                            {/* Overlay with action buttons */}
+                            <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onPhotoSelect(photo);
+                                    }}
+                                    title="View Photo"
+                                >
+                                    <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRetakePhoto(photo.id);
+                                    }}
+                                    title="Retake Photo"
+                                >
+                                    <RotateCcw className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemovePhoto(photo.id);
+                                    }}
+                                    title="Remove Photo"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                             </div>
 
-                            {/* Overlay with Actions */}
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className="h-8 w-8 p-0 bg-white hover:bg-gray-100"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            onPhotoSelect(photo)
-                                        }}
-                                        title="View Photo"
-                                    >
-                                        <Eye className="h-3 w-3" />
-                                    </Button>
-
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className="h-8 w-8 p-0 bg-white hover:bg-gray-100"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            onRetakePhoto(photo.id)
-                                        }}
-                                        title="Retake Photo"
-                                    >
-                                        <RotateCcw className="h-3 w-3" />
-                                    </Button>
-
-                                    <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        className="h-8 w-8 p-0"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            onRemovePhoto(photo.id)
-                                        }}
-                                        title="Remove Photo"
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* Selected Indicator */}
+                            {/* Selected indicator */}
                             {selectedPhoto?.id === photo.id && (
-                                <div className="absolute top-2 right-2 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                                </div>
+                                <div className="absolute top-1 left-1 h-3 w-3 rounded-full bg-purple-600" />
                             )}
 
-                            {/* Photo Info */}
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
-                                <p className="text-white text-xs truncate">{photo.name}</p>
-                                <p className="text-white text-xs opacity-75">{(photo.size / 1024 / 1024).toFixed(1)} MB</p>
+                            {/* Photo info */}
+                            <div className="mt-1 text-center text-sm text-gray-600">
+                                {photo.name}
+                                <br />
+                                {(photo.size / 1024 / 1024).toFixed(1)} MB
                             </div>
                         </div>
                     ))}
                 </div>
 
                 {/* Gallery Actions */}
-                <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-transparent"
-                        onClick={() => {
-                            // Mock functionality - would trigger file picker for additional photos
-                            console.log("[v0] Adding more photos...")
-                        }}
-                    >
-                        Add More Photos
+                <div className="mt-4 flex space-x-2">
+                    <Button onClick={handleAddMoreClick} variant="outline" size="sm" className="flex items-center">
+                        <ImageIcon className="mr-2 h-4 w-4" /> Add More Photos
                     </Button>
-
                     <Button
                         variant="outline"
                         size="sm"
-                        className="bg-transparent"
                         onClick={() => {
-                            // Mock functionality - would clear all photos
                             if (confirm("Remove all photos? This will reset the session.")) {
-                                photos.forEach((photo) => onRemovePhoto(photo.id))
+                                photos.forEach((photo) => onRemovePhoto(photo.id));
                             }
                         }}
                     >
                         Clear All
                     </Button>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleFilesSelected}
+                        style={{ display: "none" }}
+                    />
                 </div>
 
                 {/* Tips */}
-                <div className="mt-4 p-3 bg-purple-50 rounded-lg">
-                    <p className="text-sm text-purple-800">
-                        <strong>Tip:</strong> Click on a photo to view it with face detection overlays. Use the action buttons to
-                        retake or remove individual photos.
-                    </p>
-                </div>
+                <p className="mt-4 text-sm text-gray-700">
+                    Tip: Click on a photo to view it with face detection overlays. Use the action buttons to retake or remove individual photos.
+                </p>
             </CardContent>
         </Card>
-    )
+    );
+}
+
+// Utility: convert file to base64 string
+function toBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+    });
 }

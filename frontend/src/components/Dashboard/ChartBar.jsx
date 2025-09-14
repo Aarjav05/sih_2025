@@ -22,9 +22,9 @@ export default function ChartBar({ data }) {
     };
 
     return (
-        <Card>
+        <Card className="rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
             <CardHeader>
-                <CardTitle>Attendance by Class</CardTitle>
+                <CardTitle className="font-medium text-lg md:text-xl lg:text-2xl">Attendance by Class</CardTitle>
                 <CardDescription>
                     Percentage attendance across all classes
                 </CardDescription>

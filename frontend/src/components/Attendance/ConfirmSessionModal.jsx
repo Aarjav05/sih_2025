@@ -266,7 +266,7 @@ export default function ConfirmSessionModal({
                         <Button
                             onClick={handleConfirm}
                             disabled={isConfirming}
-                            className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700"
+                            className="flex-1 sm:flex-none bg-blue-500 hover:bg-blue-700"
                         >
                             {isConfirming ? "Confirming..." : "Confirm Session"}
                         </Button>

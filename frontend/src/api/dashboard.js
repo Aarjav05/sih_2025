@@ -6,9 +6,10 @@ const backendBaseUrl = 'http://localhost:5000';
 const getToken = () => localStorage.getItem('access_token') || '';
 
 export async function fetchGenderData(className, includeAttendance = false, attendanceData = []) {
+    console.log(Date.now);
     try {
         const token = getToken();
-        console.log("Token from env: ", token);
+        //console.log("Token from env: ", token);
         const response = await axios.get(`${backendBaseUrl}/api/students/class/${className}`, {
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -190,6 +191,7 @@ export async function fetchPresentToday() {
 }
 
 export async function fetchAttendanceAreaChartData(rangeDays = 7) {
+    //console.log("range days accepted in api call function: ", rangeDays);
     try {
         const token = getToken();
         const today = new Date();

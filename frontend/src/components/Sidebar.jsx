@@ -1,36 +1,38 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Users, Calendar, BarChart, X, LogOut, UserCheck, ChartPie } from "lucide-react";
+import { Users, LayoutDashboard, Hand, Calendar, BarChart3, X, LogOut, UserCheck, ChartPie } from "lucide-react";
 import { useAuth } from '../Context/AuthContext';
+import { Button } from "@/components/ui/button";
+import { Menu, Eye } from "lucide-react"
 
 const menuItems = [
-    { label: "Dashboard", icon: <Calendar />, to: "/dashboard" },
+    { label: "Dashboard", icon: <LayoutDashboard />, to: "/dashboard" },
     { label: "Students", icon: <Users />, to: "/students" },
-    { label: "Teachers", icon: <Users />, to: "/teachers" },
+    // { label: "Teachers", icon: <Users />, to: "/teachers" },
     { label: "View Attendance", icon: <Users />, to: "/view-attendance" },
-    { label: "Attendance", icon: <UserCheck />, to: "/attendance" },
-    { label: "Analytics", icon: <ChartPie />, to: "/analytics" }
+    { label: "Take Attendance", icon: <Hand />, to: "/attendance" },
+    { label: "Analytics", icon: <BarChart3 />, to: "/analytics" }
 ];
 
 export default function Sidebar({ open, setOpen }) {
     const [isHovered, setIsHovered] = useState(false);
     const location = useLocation();
     const { logout } = useAuth();
+    const [selectedOption, setSelectedOption] = useState("Dashboard");
 
     return (
         <>
-            {/* Mobile backdrop - ONLY show on mobile when open */}
-            {open && (
-                <div
-                    className="fixed inset-0 bg-opacity-50 backdrop-blur-sm z-40 lg:hidden"
-                    onClick={() => setOpen(false)}
-                />
-            )}
+            {/* Top Navbar - Mobile Only */}
+
+            <div className="z-50 bg-blue-50 lg:hidden top-0 sticky border-b rounded-xl border-border p-5 text-center shadow-md">
+
+                <h1 className="text-lg font-semibold ">{selectedOption}</h1>
+            </div>
 
             {/* Sidebar */}
             <aside
-                className={`
-          fixed left-0 top-0 h-full bg-[#edeafd] z-50 transition-all duration-300 ease-in-out
+                className={` my-1 rounded-e-xl text-white opacity-99 shadow-md hover:opacity-100
+          fixed left-0 top-0 h-full bg-gradient-to-r from-[#003080] to-[#002768] z-50 transition-all duration-300 ease-in-out
           ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${isHovered ? 'lg:w-64' : 'lg:w-18'}
           w-64 lg:block
@@ -44,24 +46,24 @@ export default function Sidebar({ open, setOpen }) {
                         <span className="bg-blue-600 text-white p-2 rounded-lg">
                             <Users size={24} />
                         </span>
-                        <span className="font-bold text-lg text-blue-900">AttendanceHub</span>
+                        <span className="font-bold text-lg text-blue-900">Markr</span>
                     </div>
                     <button
                         onClick={() => setOpen(false)}
-                        className="text-blue-900 hover:text-blue-700 p-1"
+                        className="text-blue-100 hover:text-white p-1"
                     >
                         <X size={24} />
                     </button>
                 </div>
 
                 {/* Desktop logo - ONLY visible on desktop */}
-                <div className="hidden lg:flex items-center justify-center p-4 mb-8">
-                    <span className="bg-blue-600 text-white p-2 rounded-lg">
+                <div className="hidden lg:flex items-center justify-start p-4 mb-8">
+                    <span className="bg-[#18183C] text-white p-2 rounded-lg">
                         <Users size={32} />
                     </span>
-                    <span className={`ml-3 font-bold text-lg text-blue-900 transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
+                    <span className={`ml-3 font-bold text-xl text-white transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
                         }`}>
-                        AttendanceHub
+                        Markr
                     </span>
                 </div>
 
@@ -74,11 +76,11 @@ export default function Sidebar({ open, setOpen }) {
                             className={`
                 flex items-center gap-3 px-3 py-3 rounded-lg font-medium transition-all duration-200
                 ${location.pathname === item.to
-                                    ? "bg-blue-600 text-white shadow-md"
-                                    : "hover:bg-blue-100 text-blue-900 hover:text-blue-700"
+                                    ? "bg-gradient-to-r from-[#001233] to-[#003080] text-white shadow-md"
+                                    : "hover:bg-gradient-to-r from-[#001233] to-[#003080] text-white"
                                 }
               `}
-                            onClick={() => setOpen(false)} // Close mobile menu on navigation
+                            onClick={() => { setOpen(false); setSelectedOption(item.label) }} // Close mobile menu on navigation
                         >
                             <span className="text-xl flex-shrink-0">{item.icon}</span>
                             <span className={`

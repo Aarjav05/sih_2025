@@ -11,6 +11,7 @@ import Login from "./components/Login/Login";
 import ToastContainer from "./components/ToastContainer";
 import { AuthProvider, useAuth } from './Context/AuthContext';
 import ViewAttendance from "./components/Students/ViewAttendance";
+import './App.css';
 
 // Inline route protection (no separate file needed)
 function Protected({ children }) {
@@ -39,16 +40,16 @@ function MainAppLayout() {
       {isAuthenticated && (
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white rounded-lg hover:shadow-lg transition-shadow"
+          className="lg:hidden fixed top-3 left-4 z-50 p-3 rounded-lg hover:shadow-lg transition-shadow"
         >
-          <Menu size={24} className="text-blue-600" />
+          {!sidebarOpen && <Menu size={28} className="text-blue-600" />}
         </button>
       )}
 
       <main className={`
         min-h-screen overflow-x-auto transition-all duration-300
         ${isAuthenticated ? 'lg:ml-14' : ''}
-        px-2 md:px-6 pt-2 lg:pt-6 pb-2
+        px-2 md:px-6 pt-2 lg:pt-4 pb-2
       `}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -72,10 +73,10 @@ function MainAppLayout() {
             path="/teachers"
             element={<Protected><TeachersPage /></Protected>}
           />
-          {/* <Route
+          <Route
             path="/analytics"
             element={<Protected><AnalyticsPage /></Protected>}
-          /> */}
+          />
           <Route
             path="/"
             element={<Protected><DashboardPage /></Protected>}

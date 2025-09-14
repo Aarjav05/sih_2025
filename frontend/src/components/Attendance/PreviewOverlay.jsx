@@ -1,15 +1,24 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react"
 
-export default function PreviewOverlay({ photo, photoSize, captureResults, onFaceClick, facesDetected, matchesFound }) {
+export default function PreviewOverlay({ photos = [], selectedPhoto, captureResults = [], onFaceClick, facesDetected, matchesFound }) {
     const [zoom, setZoom] = useState(1)
     const [selectedFaceId, setSelectedFaceId] = useState(null)
+    const [currentIndex, setCurrentIndex] = useState(0)
 
-    if (!photo) {
+    useEffect(() => {
+        if (selectedPhoto) {
+            const idx = photos.findIndex((p) => p.id === selectedPhoto.id)
+            if (idx >= 0) setCurrentIndex(idx)
+        }
+    }, [selectedPhoto, photos])
+
+
+    if (!photos.length) {
         return (
             <Card>
                 <CardHeader>
@@ -24,16 +33,32 @@ export default function PreviewOverlay({ photo, photoSize, captureResults, onFac
         )
     }
 
+    const currentPhoto = photos[currentIndex]
+    // Face results filtered by current photo id
+    const currentResults = captureResults.filter((r) => r.photo_id === currentPhoto?.id)
+
+
+
     const handleFaceClick = (faceId) => {
         setSelectedFaceId(faceId)
         onFaceClick?.(faceId)
     }
+
 
     const getConfidenceColor = (confidence) => {
         if (confidence >= 0.8) return "border-green-500 bg-green-500"
         if (confidence >= 0.5) return "border-amber-500 bg-amber-500"
         return "border-red-500 bg-red-500"
     }
+
+    const prevPhoto = () => {
+        setCurrentIndex((i) => (i === 0 ? photos.length - 1 : i - 1))
+    }
+
+    const nextPhoto = () => {
+        setCurrentIndex((i) => (i === photos.length - 1 ? 0 : i + 1))
+    }
+
 
     return (
         <Card>
@@ -69,15 +94,19 @@ export default function PreviewOverlay({ photo, photoSize, captureResults, onFac
                         }}
                     >
                         {/* Main Photo */}
-                        <img
-                            src={photo.url || "/placeholder.svg"}
-                            alt={photo.name}
-                            className="w-full h-auto block"
-                            style={{ maxWidth: "none" }}
-                        />
+                        {currentPhoto ? (
+                            <img
+                                src={currentPhoto.url}
+                                alt={currentPhoto.name}
+                                style={{ transform: `scale(${zoom})`, maxHeight: "100%", maxWidth: "100%" }}
+                                className="rounded"
+                            />
+                        ) : (
+                            <div>No photo selected</div>
+                        )}
 
                         {/* Face Bounding Boxes */}
-                        {captureResults?.map((result) => {
+                        {captureResults?.filter(result => result.bbox)?.map((result) => {
                             const isSelected = selectedFaceId === result.face_id
                             const confidenceColor = getConfidenceColor(result.confidence)
 
@@ -151,14 +180,14 @@ export default function PreviewOverlay({ photo, photoSize, captureResults, onFac
                 <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                            <span className="font-medium">Photo:</span> {photo.name}
+                            <span className="font-medium">Photo:</span> {currentPhoto?.name}
                         </div>
                         <div>
                             <span className="font-medium">Faces Detected:</span> {facesDetected}
                         </div>
-                        <div>
+                        {/* <div>
                             <span className="font-medium">Size:</span> {photoSize.toFixed(4)} MB
-                        </div>
+                        </div> */}
                         <div>
                             <span className="font-medium">Matched:</span>{" "}
                             {matchesFound}

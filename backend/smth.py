@@ -204,7 +204,8 @@ def login():
         access_token = create_access_token(identity=str(user.id))
         
         # Return the token to the frontend
-        return jsonify({'access_token': access_token})
+        return jsonify({'access_token': access_token, 'role': user.role})
+
         
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
@@ -577,7 +578,7 @@ def get_teachers(user):
 
 # Analytics Routes
 @app.route('/api/analytics/school', methods=['GET'])
-@require_role(['principal','teacher'])
+@require_role(['principal','teacher','district'])
 def school_analytics(user):
     try:
         start_date_str = request.args.get('start_date')
@@ -643,7 +644,7 @@ def school_analytics(user):
 
 # District-level Routes
 @app.route('/api/district/overview', methods=['GET'])
-@require_role(['district'])
+@require_role(['district','teacher'])
 def district_overview(user):
     try:
         schools = School.query.filter_by(district_id=user.district_id, is_active=True).all()
@@ -686,6 +687,51 @@ def district_overview(user):
     except Exception as e:
         logger.error(f"Error generating district overview: {str(e)}")
         return jsonify({'error': 'Failed to generate district overview'}), 500
+    
+
+# Atharva added new route for district overview
+#To get classses of a school
+@app.route('/api/schools/<int:school_id>/classes', methods=['GET'])
+@require_role(['district'])
+def get_classes_for_school(user, school_id):
+    # Verify school belongs to district of user
+    school = School.query.get(school_id)
+    if not school or (user.district_id != school.district_id):
+        return jsonify({'error': 'School not found or access denied'}), 404
+
+    classes = db.session.query(Student.class_name).filter_by(
+        school_id=school_id, is_active=True
+    ).distinct().all()
+
+    class_names = [c[0] for c in classes]
+    return jsonify({'classes': class_names})
+
+
+#To List students of a class in a school
+@app.route('/api/schools/<int:school_id>/classes/<class_name>/students', methods=['GET'])
+@require_role(['district'])
+def get_students_for_class(user, school_id, class_name):
+    school = School.query.get(school_id)
+    if not school or (user.district_id != school.district_id):
+        return jsonify({'error': 'School not found or access denied'}), 404
+
+    students = Student.query.filter_by(school_id=school_id,
+                                       class_name=class_name,
+                                       is_active=True).all()
+    return jsonify({
+        'students': [
+            {
+                'id': s.id,
+                'name': s.name,
+                'student_id': s.student_id,
+                'gender': s.gender,
+                'guardian_name': s.guardian_name,
+                'guardian_phone': s.guardian_phone,
+                'health_notes': s.health_notes
+            }
+            for s in students
+        ]
+    })
 
 # Student Management Routes
 @app.route('/api/students', methods=['POST'])

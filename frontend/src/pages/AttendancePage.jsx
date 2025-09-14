@@ -117,16 +117,15 @@ export default function AttendancePage() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (uploadedPhotos.length > 0) {
+        if (uploadedPhotos.length > 0 && !selectedPhoto) {
             setSelectedPhoto(uploadedPhotos[0])
-        } else {
-            setSelectedPhoto(null)
         }
 
-        // Log here whenever matchesFound or facesDetected update alongside uploadedPhotos
-        console.log("Matches Found:", matchesFound);
-        console.log("Faces Detected:", facesDetected);
-    }, [uploadedPhotos, matchesFound, facesDetected]);
+    }, [uploadedPhotos, selectedPhoto]);
+
+    const handlePhotoSelect = (photo) => {
+        setSelectedPhoto(photo);
+    };
 
 
     useEffect(() => {
@@ -144,66 +143,145 @@ export default function AttendancePage() {
         total: students.length,
     }
 
-    // Handler for uploading photos and triggering attendance capture API
     const handlePhotosUploaded = async (photos) => {
-        setUploadedPhotos(photos)
-        if (photos.length === 0) return
+        if (photos.length === 0) return;
 
         if (!selectedClass) {
-            alert("Please select a class before uploading photos.")
-            return
-        }
-
-        const base64Image = photos[0].base64 // Adjust this based on your UploadCapturePanel output
-        const imageSizeMB = photos[0].size / (1024 * 1024);  // Convert bytes to MB
-        setPhotoSize(imageSizeMB);
-        //console.log("Base64 Image:", base64Image);  // Add this log
-
-        if (!base64Image) {                      // Add this check
-            alert("Invalid image data. Please try again.");
-            setLoading(false);
+            alert("Please select a class before uploading photos.");
             return;
         }
 
-        setLoading(true)
+        // Append photos to uploadedPhotos
+        setUploadedPhotos(prev => [...prev, ...photos]);
+
+        // Calculate max photo size among NEW photos (optional)
+        const sizesMB = photos.map(p => p.size / (1024 * 1024));
+        const imageSizeMB = Math.max(...sizesMB);
+        setPhotoSize(imageSizeMB);
+
+        // Validate base64 presence on new photos
+        for (const photo of photos) {
+            if (!photo.base64) {
+                alert("One or more photos have invalid image data. Please try again.");
+                return;
+            }
+        }
+
+        setLoading(true);
         try {
-            const result = await captureAttendance(selectedClass, base64Image)
-            console.log("Backend attendance capture response:", result);
-            await setFacesDetected(result.faces_detected);
-            await setMatchesFound(result.matches_found);
-            console.log("Matches Found: " + matchesFound);
-            const presentStudents = (result.present_students || []).map((s) => ({
-                id: s.id || null,
-                student_id: s.student_id_number || s.student_id || String(s.id || ""),
-                name: s.student_name || "",  // <-- Use student_name key here
-                status: "present",
-                confidence: s.confidence || null,
-                attendance_rate: s.attendance_rate || 0,
-            }));
+            // Aggregate new attendance data for just the newly uploaded photos
+            let aggregate = {
+                present_students: [],
+                absent_students: [],
+                unmatched_faces: [],
+                faces_detected: 0,
+                matches_found: 0,
+            };
 
-            const absentStudents = (result.absent_students || []).map((s) => ({
-                student_id: s.student_id || s.id,
-                name: s.name,
-                status: "absent",
-                confidence: null,
-                attendance_rate: s.attendance_rate || 0,
-            }));
+            let allNewCaptureResults = [];
 
-            const combinedStudents = [...presentStudents, ...absentStudents];
-            setStudents(combinedStudents);
+            for (const photo of photos) {
+                const base64Image = photo.base64;
+                const result = await captureAttendance(selectedClass, base64Image);
+                console.log("Attendance capture result:", result);
 
-            setCaptureResults([
-                ...(result.present_students || []).map(face => ({
+                aggregate.faces_detected += result.faces_detected || 0;
+                aggregate.matches_found += result.matches_found || 0;
+                aggregate.present_students.push(...(result.present_students || []));
+                aggregate.absent_students.push(...(result.absent_students || []));
+                aggregate.unmatched_faces.push(...(result.unmatched_faces || []));
+
+                // Prepare face captures with face_id keys for merging
+                allNewCaptureResults.push(
+                    ...(result.present_students || []).map((face, index) => ({
+                        ...face,
+                        photo_id: photo.id,
+                        face_id: `${photo.id}_present_${index}`,
+                        matched_student_id: face.student_id_number || face.student_id || "",
+                        matched_student_name: face.student_name || face.name || "",
+                    }))
+                );
+                allNewCaptureResults.push(...(result.unmatched_faces || []).map((face, index) => ({
                     ...face,
-                    face_id: face.face_index ?? face.id ?? face.student_id, // ensure key for MatchResultCard
-                    matched_student_id: face.student_id_number || face.student_id || "",
-                    matched_student_name: face.student_name || face.name || "",
-                })),
-                ...(result.unmatched_faces || []),
-            ]);
+                    photo_id: photo.id,
+                    face_id: `${photo.id}_unmatched_${index}`,
+                    bbox: face.bbox || { x: 0, y: 0, w: 50, h: 50 }
+                })));
+            }
 
+            // Deduplicate present and absent in NEW batch
+            const newPresentMap = {};
+            aggregate.present_students.forEach(s => {
+                newPresentMap[s.student_id_number || s.student_id || s.id] = s;
+            });
+            const uniqueNewPresent = Object.values(newPresentMap);
 
-            setSessionId(result.session_id);
+            const newAbsentMap = {};
+            aggregate.absent_students.forEach(s => {
+                newAbsentMap[s.student_id || s.id] = s;
+            });
+            const uniqueNewAbsent = Object.values(newAbsentMap);
+
+            // Merge new attendance with existing students state
+            const mergedStudentsMap = {};
+
+            // Add all existing students first
+            students.forEach(s => {
+                mergedStudentsMap[s.student_id] = s;
+            });
+
+            // Update/insert present students from new batch
+            uniqueNewPresent.forEach(s => {
+                mergedStudentsMap[s.student_id_number || s.student_id || String(s.id)] = {
+                    id: s.id || null,
+                    student_id: s.student_id_number || s.student_id || String(s.id),
+                    name: s.student_name || s.name || "",
+                    status: "present",
+                    confidence: s.confidence || null,
+                    attendance_rate: s.attendance_rate || 0,
+                };
+            });
+
+            // Update/insert absent students from new batch ONLY IF they do not exist as present in merged
+            uniqueNewAbsent.forEach(s => {
+                const key = s.student_id || s.id;
+                if (!mergedStudentsMap[key] || mergedStudentsMap[key].status !== "present") {
+                    mergedStudentsMap[key] = {
+                        student_id: key,
+                        name: s.name,
+                        status: "absent",
+                        confidence: null,
+                        attendance_rate: s.attendance_rate || 0,
+                    };
+                }
+            });
+
+            // Convert back to array
+            const finalStudents = Object.values(mergedStudentsMap);
+
+            setStudents(finalStudents);
+
+            // Merge captureResults incrementally with existing ones based on face_id
+            const captureMap = {};
+            captureResults.forEach(r => {
+                captureMap[r.face_id] = r;
+            });
+            allNewCaptureResults.forEach(r => {
+                captureMap[r.face_id] = r;
+            });
+            const mergedCaptureResults = Object.values(captureMap);
+
+            setCaptureResults(mergedCaptureResults);
+
+            setFacesDetected(aggregate.faces_detected);
+            setMatchesFound(aggregate.matches_found);
+
+            // Set session ID once from the first new photo's capture to keep continuity
+            if (photos.length > 0) {
+                const firstResult = await captureAttendance(selectedClass, photos[0].base64);
+                setSessionId(firstResult.session_id);
+            }
+
             setCurrentStep("review");
         } catch (error) {
             console.error("Error capturing attendance:", error);
@@ -211,6 +289,9 @@ export default function AttendancePage() {
         }
         setLoading(false);
     };
+
+
+
 
 
     const handleMatchUpdate = (faceId, studentId, status) => {
@@ -312,7 +393,7 @@ export default function AttendancePage() {
                 {/* Header */}
                 <div className="mb-6">
                     {/* Class and Date Selection */}
-                    <Card className="mb-4">
+                    <Card className="mb-4 transition-all ease-in shadow-md hover:shadow-xl">
                         <CardContent className="p-4">
                             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                                 <div className="flex-1">
@@ -371,7 +452,8 @@ export default function AttendancePage() {
                             <CaptureGallery
                                 photos={uploadedPhotos}
                                 selectedPhoto={selectedPhoto}
-                                onPhotoSelect={setSelectedPhoto}
+                                onPhotoSelect={handlePhotoSelect}
+                                onPhotosUploaded={handlePhotosUploaded}
                                 onRetakePhoto={(photoId) => {
                                     // Mock retake functionality
                                     console.log("[v0] Retaking photo:", photoId)
@@ -383,9 +465,10 @@ export default function AttendancePage() {
 
                             {selectedPhoto && (
                                 <PreviewOverlay
-                                    photoSize={photoSize}
-                                    photo={selectedPhoto}
-                                    captureResults={captureResults.filter((r) => r.photo_id === selectedPhoto.id)}
+                                    photos={uploadedPhotos}
+                                    photoSize={selectedPhoto ? selectedPhoto.size / (1024 * 1024) : 0}
+                                    selectedPhoto={selectedPhoto}
+                                    captureResults={captureResults.filter((r) => r.photo_id === selectedPhoto?.id)}
                                     facesDetected={facesDetected}
                                     matchesFound={matchesFound}
                                     onFaceClick={(faceId) => {
@@ -435,18 +518,41 @@ export default function AttendancePage() {
                             {/* Match Results */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-lg">Detected Faces</CardTitle>
+                                    <CardTitle className="text-lg">Detected Faces             {selectedPhoto && (
+                                        <span className="text-sm font-normal text-gray-600 ml-2">
+                                            ({captureResults.filter((r) => r.photo_id === selectedPhoto?.id).length} in selected photo)
+                                        </span>
+                                    )}</CardTitle>
+                                    {selectedPhoto && (
+                                        <p className="text-sm text-gray-600">
+                                            Showing faces from: {selectedPhoto.name}
+                                        </p>
+                                    )}
                                 </CardHeader>
                                 <CardContent className="space-y-3">
-                                    {captureResults.map((result) => (
-                                        <MatchResultCard
-                                            key={result.face_id}
-                                            result={result}
-                                            students={students}
-                                            onMatchUpdate={handleMatchUpdate}
-                                            confidenceThreshold={confidenceThreshold}
-                                        />
-                                    ))}
+                                    {selectedPhoto ? (
+                                        captureResults.filter((r) => r.photo_id === selectedPhoto?.id).length > 0 ? (
+                                            captureResults
+                                                .filter((r) => r.photo_id === selectedPhoto?.id)
+                                                .map((result) => (
+                                                    <MatchResultCard
+                                                        key={result.face_id}
+                                                        result={result}
+                                                        students={students}
+                                                        onMatchUpdate={handleMatchUpdate}
+                                                        confidenceThreshold={confidenceThreshold}
+                                                    />
+                                                ))
+                                        ) : (
+                                            <div className="text-center py-4 text-gray-500">
+                                                <p>No faces detected in this photo</p>
+                                            </div>
+                                        )
+                                    ) : (
+                                        <div className="text-center py-4 text-gray-500">
+                                            <p>Select a photo to view detected faces</p>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
 
@@ -455,7 +561,7 @@ export default function AttendancePage() {
 
                             {/* Confirm Button */}
                             <Button
-                                className="w-full bg-purple-600 hover:bg-purple-700"
+                                className="w-full bg-blue-600 hover:bg-blue-800"
                                 size="lg"
                                 onClick={() => setShowConfirmModal(true)}
                                 disabled={!selectedClass || sessionSummary.presentCount + sessionSummary.absentCount === 0}

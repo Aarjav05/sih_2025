@@ -78,14 +78,14 @@ export default function UploadCapturePanel({ onPhotosUploaded, selectedClass }) 
     return (
         <div className="space-y-6">
             {!selectedClass && (
-                <Alert>
+                <Alert className="shadow-lg">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>Please select a class before uploading photos.</AlertDescription>
                 </Alert>
             )}
 
             {/* Upload Area */}
-            <Card className="relative">
+            <Card className="relative  transition-all ease-in shadow-md hover:shadow-xl">
                 <CardHeader>
                     <CardTitle className="text-xl">Capture Attendance</CardTitle>
                 </CardHeader>
@@ -113,14 +113,14 @@ export default function UploadCapturePanel({ onPhotosUploaded, selectedClass }) 
                             <div className="flex flex-col sm:flex-row gap-3 justify-center">
                                 <Button
                                     onClick={handleUploadClick}
-                                    className="bg-purple-600 hover:bg-purple-700"
+                                    className="bg-blue-500 hover:bg-blue-700"
                                     disabled={!selectedClass}
                                 >
                                     <Upload className="h-4 w-4 mr-2" />
                                     Upload Photos
                                 </Button>
 
-                                <Button
+                                {/* <Button
                                     variant="outline"
                                     onClick={handleCameraClick}
                                     disabled={!selectedClass}
@@ -129,7 +129,7 @@ export default function UploadCapturePanel({ onPhotosUploaded, selectedClass }) 
                                     <Camera className="h-4 w-4 mr-2" />
                                     Capture Camera
                                     <span className="ml-1 text-xs text-gray-500">(Coming Soon)</span>
-                                </Button>
+                                </Button> */}
                             </div>
 
                             <p className="text-xs text-gray-500">Supports JPG, PNG, WEBP. Multiple files allowed.</p>
@@ -157,13 +157,12 @@ export default function UploadCapturePanel({ onPhotosUploaded, selectedClass }) 
             />
 
             {/* Instructions */}
-            <Card>
+            <Card className="transition-all ease-in shadow-md hover:shadow-xl">
                 <CardContent className="p-4">
                     <h4 className="font-medium text-gray-900 mb-2">Tips for Best Results:</h4>
                     <ul className="text-sm text-gray-600 space-y-1">
                         <li>• Ensure faces are clearly visible and well-lit</li>
                         <li>• Avoid blurry or low-resolution images</li>
-                        <li>• Multiple angles can improve detection accuracy</li>
                         <li>• Upload multiple photos if needed for complete coverage</li>
                     </ul>
                 </CardContent>

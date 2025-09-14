@@ -189,17 +189,14 @@ const StudentDashboard = () => {
 
   const fetchStudentAttendance = async () => {
     if (!currentStudent) return;
-    
     try {
       setAttendanceLoading(true);
       const token = getToken();
-      
       const response = await axios.get(`http://localhost:5000/api/students/${currentStudent.id}/attendance/weekly`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
       setAttendanceData(response.data.weekly_attendance);
     } catch (err) {
       console.error('Error fetching attendance:', err);
@@ -680,13 +677,12 @@ const StudentDashboard = () => {
                               <tr key={index} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.date}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    record.status === 'present' 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : record.status === 'absent'
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${record.status === 'present'
+                                    ? 'bg-green-100 text-green-800'
+                                    : record.status === 'absent'
                                       ? 'bg-red-100 text-red-800'
                                       : 'bg-gray-100 text-gray-800'
-                                  }`}>
+                                    }`}>
                                     {record.status.toUpperCase()}
                                   </span>
                                 </td>
@@ -746,11 +742,10 @@ const StudentDashboard = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{fee.month}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{fee.amount}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                fee.status === 'paid' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${fee.status === 'paid'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                                }`}>
                                 {fee.status}
                               </span>
                             </td>
