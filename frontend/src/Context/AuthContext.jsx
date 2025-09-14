@@ -22,8 +22,19 @@ export function AuthProvider({ children }) {
 
     const isAuthenticated = !!user;
 
+    // ADD THIS FUNCTION
+    const getToken = () => {
+        return localStorage.getItem("access_token");
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            login, 
+            logout, 
+            isAuthenticated,
+            getToken // ADD THIS TO THE PROVIDED VALUE
+        }}>
             {children}
         </AuthContext.Provider>
     );

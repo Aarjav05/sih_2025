@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
-const ProgressChart = ({ activeTab, studentData }) => {
+const AttendanceChart = ({ activeTab, attendanceData }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    if (activeTab !== "progress" || !canvasRef.current || !studentData) return;
+    if (activeTab !== "attendance-graph" || !canvasRef.current || !attendanceData) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -14,30 +14,15 @@ const ProgressChart = ({ activeTab, studentData }) => {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Sample data for the chart
+    // Sample monthly attendance data
     const data = {
-      labels: ["Test 1", "Test 2", "Test 3", "Test 4", "Test 5", "Test 6"],
+      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
       datasets: [
         {
-          label: "Maths",
-          data: [75, 80, 85, 78, 82, 88],
+          label: "Attendance %",
+          data: [85, 92, 78, 95, 88, 75, 90, 86, 93, 89, 82, 96],
           color: "#3b82f6",
-        },
-        {
-          label: "Science",
-          data: [70, 85, 90, 88, 75, 85],
-          color: "#ef4444",
-        },
-        {
-          label: "English",
-          data: [80, 75, 70, 85, 90, 85],
-          color: "#f59e0b",
-        },
-        {
-          label: "History",
-          data: [85, 80, 75, 80, 85, 90],
-          color: "#10b981",
-        },
+        }
       ],
     }
 
@@ -80,37 +65,40 @@ const ProgressChart = ({ activeTab, studentData }) => {
       ctx.fillText(value + "%", padding - 10, y + 4)
     }
 
-    // Draw data lines
-    data.datasets.forEach((dataset) => {
-      ctx.strokeStyle = dataset.color
-      ctx.lineWidth = 2
-      ctx.beginPath()
+    // Draw data line
+    ctx.strokeStyle = data.datasets[0].color
+    ctx.lineWidth = 2
+    ctx.beginPath()
 
-      dataset.data.forEach((value, index) => {
-        const x = padding + (index * chartWidth) / (data.labels.length - 1)
-        const y = padding + chartHeight - (value / 100) * chartHeight
+    data.datasets[0].data.forEach((value, index) => {
+      const x = padding + (index * chartWidth) / (data.labels.length - 1)
+      const y = padding + chartHeight - (value / 100) * chartHeight
 
-        if (index === 0) {
-          ctx.moveTo(x, y)
-        } else {
-          ctx.lineTo(x, y)
-        }
-      })
-
-      ctx.stroke()
-
-      // Draw data points
-      ctx.fillStyle = dataset.color
-      dataset.data.forEach((value, index) => {
-        const x = padding + (index * chartWidth) / (data.labels.length - 1)
-        const y = padding + chartHeight - (value / 100) * chartHeight
-
-        ctx.beginPath()
-        ctx.arc(x, y, 4, 0, 2 * Math.PI)
-        ctx.fill()
-      })
+      if (index === 0) {
+        ctx.moveTo(x, y)
+      } else {
+        ctx.lineTo(x, y)
+      }
     })
-  }, [activeTab, studentData])
+
+    ctx.stroke()
+
+    // Draw data points
+    ctx.fillStyle = data.datasets[0].color
+    data.datasets[0].data.forEach((value, index) => {
+      const x = padding + (index * chartWidth) / (data.labels.length - 1)
+      const y = padding + chartHeight - (value / 100) * chartHeight
+
+      ctx.beginPath()
+      ctx.arc(x, y, 4, 0, 2 * Math.PI)
+      ctx.fill()
+
+      // Add value labels
+      ctx.fillStyle = "#374151"
+      ctx.textAlign = "center"
+      ctx.fillText(value + "%", x, y - 10)
+    })
+  }, [activeTab, attendanceData])
 
   return <canvas ref={canvasRef} width="800" height="300" className="w-full h-[300px]" />
 }
@@ -119,7 +107,7 @@ const StudentDashboard = () => {
   const [students, setStudents] = useState([]);
   const [currentStudent, setCurrentStudent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("progress");
+  const [activeTab, setActiveTab] = useState("monthly-attendance");
   const [selectedClass, setSelectedClass] = useState("class-1");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -134,6 +122,17 @@ const StudentDashboard = () => {
     health_notes: '',
     face_image: ''
   });
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+  // Sample fees history data
+  const feesHistoryData = [
+    { month: "January 2024", amount: 5000, status: "paid", paymentDate: "2024-01-05" },
+    { month: "February 2024", amount: 5000, status: "paid", paymentDate: "2024-02-03" },
+    { month: "March 2024", amount: 5000, status: "paid", paymentDate: "2024-03-02" },
+    { month: "April 2024", amount: 5000, status: "pending", dueDate: "2024-04-10" },
+    { month: "May 2024", amount: 5000, status: "pending", dueDate: "2024-05-10" },
+  ];
 
   const getToken = () => {
     return localStorage.getItem('access_token');
@@ -142,6 +141,12 @@ const StudentDashboard = () => {
   useEffect(() => {
     fetchStudents();
   }, [selectedClass]);
+
+  useEffect(() => {
+    if (currentStudent && activeTab === "monthly-attendance") {
+      fetchStudentAttendance();
+    }
+  }, [currentStudent, activeTab]);
 
   const fetchStudents = async () => {
     try {
@@ -163,7 +168,6 @@ const StudentDashboard = () => {
       });
 
       setStudents(response.data.students);
-      // Auto-select the first student if none is selected
       if (response.data.students.length > 0 && !currentStudent) {
         setCurrentStudent(response.data.students[0]);
       }
@@ -173,11 +177,35 @@ const StudentDashboard = () => {
         setError('Authentication failed. Please login again.');
       } else if (err.response?.status === 403) {
         setError('You do not have permission to view this data.');
+      } else if (err.response?.status === 404) {
+        setError('No students found in this class.');
       } else {
         setError('Failed to fetch students. Please check your connection.');
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStudentAttendance = async () => {
+    if (!currentStudent) return;
+    
+    try {
+      setAttendanceLoading(true);
+      const token = getToken();
+      
+      const response = await axios.get(`http://localhost:5000/api/students/${currentStudent.id}/attendance/weekly`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      setAttendanceData(response.data.weekly_attendance);
+    } catch (err) {
+      console.error('Error fetching attendance:', err);
+      setAttendanceData([]);
+    } finally {
+      setAttendanceLoading(false);
     }
   };
 
@@ -196,6 +224,11 @@ const StudentDashboard = () => {
       const token = getToken();
       if (!token) {
         setError('Please login first.');
+        return;
+      }
+
+      if (!newStudent.name || !newStudent.student_id || !newStudent.guardian_name || !newStudent.guardian_phone || !newStudent.face_image) {
+        alert('Please fill all required fields including the student photo.');
         return;
       }
 
@@ -218,17 +251,21 @@ const StudentDashboard = () => {
           health_notes: '',
           face_image: ''
         });
-        fetchStudents(); // Refresh the list
+        fetchStudents();
         alert('Student added successfully!');
       }
     } catch (err) {
       console.error('Error adding student:', err);
-      alert('Failed to add student: ' + (err.response?.data?.error || 'Unknown error'));
+      if (err.response?.status === 400) {
+        alert('Failed to add student: ' + err.response.data.error);
+      } else {
+        alert('Failed to add student: ' + (err.response?.data?.error || 'Unknown error'));
+      }
     }
   };
 
   const handleDeleteStudent = async (studentId) => {
-    if (!window.confirm('Are you sure you want to delete this student?')) {
+    if (!window.confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
       return;
     }
 
@@ -239,8 +276,6 @@ const StudentDashboard = () => {
         return;
       }
 
-      // Since your backend doesn't have a delete endpoint, we'll deactivate the student
-      // You might need to add this endpoint to your Flask app
       const response = await axios.delete(`http://localhost:5000/api/students/${studentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -248,8 +283,10 @@ const StudentDashboard = () => {
       });
 
       if (response.status === 200) {
-        fetchStudents(); // Refresh the list
-        setCurrentStudent(null);
+        setStudents(students.filter(student => student.id !== studentId));
+        if (currentStudent && currentStudent.id === studentId) {
+          setCurrentStudent(null);
+        }
         alert('Student deleted successfully!');
       }
     } catch (err) {
@@ -548,7 +585,7 @@ const StudentDashboard = () => {
                 </svg>
                 <span className="absolute text-white text-lg font-bold">{currentStudent.progress || 85}%</span>
               </div>
-              <p className="text-blue-100 text-sm">Overall Progress</p>
+              <p className="text-blue-100 text-sm">Overall Attendance</p>
             </div>
           </div>
 
@@ -604,7 +641,7 @@ const StudentDashboard = () => {
           {/* Tabs Section */}
           <div className="bg-white rounded-2xl shadow-md overflow-hidden">
             <div className="flex border-b border-gray-200">
-              {["progress", "attendance", "fees", "bus"].map((tab) => (
+              {["monthly-attendance", "attendance-graph", "fees-history"].map((tab) => (
                 <button
                   key={tab}
                   className={`px-8 py-4 text-sm font-medium border-b-2 transition-all duration-300 ${activeTab === tab
@@ -613,68 +650,122 @@ const StudentDashboard = () => {
                     }`}
                   onClick={() => setActiveTab(tab)}
                 >
-                  {tab === "progress" && "Academic Progress"}
-                  {tab === "attendance" && "Attendance"}
-                  {tab === "fees" && "Fees History"}
-                  {tab === "bus" && "Transport"}
+                  {tab === "monthly-attendance" && "Monthly Attendance"}
+                  {tab === "attendance-graph" && "Attendance Graph"}
+                  {tab === "fees-history" && "Fees History"}
                 </button>
               ))}
             </div>
 
             <div className="p-6">
-              {activeTab === "progress" && (
+              {activeTab === "monthly-attendance" && (
                 <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h4 className="text-lg font-semibold text-gray-800">Performance Overview</h4>
-                    <div className="flex gap-4">
-                      <span className="flex items-center text-xs text-gray-500">
-                        <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>Maths
-                      </span>
-                      <span className="flex items-center text-xs text-gray-500">
-                        <span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span>Science
-                      </span>
-                      <span className="flex items-center text-xs text-gray-500">
-                        <span className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>English
-                      </span>
-                      <span className="flex items-center text-xs text-gray-500">
-                        <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>History
-                      </span>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-6">Attendance Records - Past Week</h4>
+                  {attendanceLoading ? (
+                    <div className="text-center py-8">
+                      <div className="text-gray-500">Loading attendance data...</div>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {attendanceData.length > 0 ? (
+                            attendanceData.map((record, index) => (
+                              <tr key={index} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.date}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    record.status === 'present' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : record.status === 'absent'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {record.status.toUpperCase()}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan="2" className="px-6 py-4 text-center text-sm text-gray-500">
+                                No attendance records found
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "attendance-graph" && (
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-6">Monthly Attendance Overview</h4>
+                  <AttendanceChart activeTab={activeTab} attendanceData={attendanceData} />
+                  <div className="mt-6 grid grid-cols-3 gap-4">
+                    <div className="bg-green-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-green-600">85%</div>
+                      <div className="text-sm text-green-700">Average Attendance</div>
+                    </div>
+                    <div className="bg-blue-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-blue-600">22</div>
+                      <div className="text-sm text-blue-700">Present Days</div>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-red-600">3</div>
+                      <div className="text-sm text-red-700">Absent Days</div>
                     </div>
                   </div>
-                  <ProgressChart activeTab={activeTab} studentData={currentStudent} />
                 </div>
               )}
-              {activeTab === "attendance" && (
-                <div className="text-center py-12">
-                  <div className="inline-block p-4 bg-green-100 rounded-full mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+
+              {activeTab === "fees-history" && (
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-6">Fees Payment History</h4>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {feesHistoryData.map((fee, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{fee.month}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{fee.amount}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                fee.status === 'paid' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {fee.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {fee.status === 'paid' ? fee.paymentDate : `Due: ${fee.dueDate}`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Attendance Record</h3>
-                  <p className="text-gray-500">95% attendance this semester</p>
-                </div>
-              )}
-              {activeTab === "fees" && (
-                <div className="text-center py-12">
-                  <div className="inline-block p-4 bg-blue-100 rounded-full mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <h5 className="font-semibold text-blue-800 mb-2">Total Outstanding: ₹10,000</h5>
+                    <p className="text-sm text-blue-600">Next due date: April 10, 2024</p>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Fees Status</h3>
-                  <p className="text-gray-500">All fees are paid up to date</p>
-                </div>
-              )}
-              {activeTab === "bus" && (
-                <div className="text-center py-12">
-                  <div className="inline-block p-4 bg-purple-100 rounded-full mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">Bus Route #12</h3>
-                  <p className="text-gray-500">Pickup: 7:15 AM | Dropoff: 3:30 PM</p>
                 </div>
               )}
             </div>
@@ -693,4 +784,3 @@ const StudentDashboard = () => {
 };
 
 export default StudentDashboard;
-

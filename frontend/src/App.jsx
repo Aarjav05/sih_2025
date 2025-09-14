@@ -10,6 +10,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import Login from "./components/Login/Login";
 import ToastContainer from "./components/ToastContainer";
 import { AuthProvider, useAuth } from './Context/AuthContext';
+import ViewAttendance from "./components/Students/ViewAttendance";
 
 // Inline route protection (no separate file needed)
 function Protected({ children }) {
@@ -54,6 +55,10 @@ function MainAppLayout() {
           <Route
             path="/dashboard"
             element={<Protected><DashboardPage /></Protected>}
+          />
+          <Route
+            path="/view-attendance"
+            element={<Protected><ViewAttendance /></Protected>}
           />
           <Route
             path="/attendance"

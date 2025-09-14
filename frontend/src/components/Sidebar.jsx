@@ -7,6 +7,7 @@ const menuItems = [
     { label: "Dashboard", icon: <Calendar />, to: "/dashboard" },
     { label: "Students", icon: <Users />, to: "/students" },
     { label: "Teachers", icon: <Users />, to: "/teachers" },
+    { label: "View Attendance", icon: <Users />, to: "/view-attendance" },
     { label: "Attendance", icon: <UserCheck />, to: "/attendance" },
     { label: "Analytics", icon: <ChartPie />, to: "/analytics" }
 ];

@@ -33,14 +33,30 @@ app.config.from_object(config['development'])  # or 'production' / 'testing'
 # Initialize extensions
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
-CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:5500","http://localhost:5173"],
-      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allow_headers=["Authorization", "Content-Type"],
-      supports_credentials=True)
+# In your app.py, update the CORS configuration:
+CORS(app, 
+     origins=["http://localhost:3000", "http://127.0.0.1:5500", "http://localhost:5173"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
+     supports_credentials=True,
+     expose_headers=["Authorization"])  # Add this line
+
+
+# ... your existing CORS config above ...
+
+# --- Add this right after your CORS configuration ---
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify()
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:5173")
+        response.headers.add("Access-Control-Allow-Headers", "Authorization, Content-Type")
+        response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        return response
 
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
+# ... rest of your code ...
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -1086,6 +1102,99 @@ def create_tables():
     with app.app_context():
         db.create_all()
         logger.info("Database tables created")
+
+# ... your other routes above ...
+
+@app.route('/api/students/<int:student_id>', methods=['DELETE', 'OPTIONS'])
+@require_role(['principal'])
+@require_school_access
+def delete_student(user, student_id):
+    try:
+        if request.method == 'OPTIONS':
+            # Handle preflight request
+            response = jsonify()
+            response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
+            response.headers.add('Access-Control-Allow-Headers', 'Authorization, Content-Type')
+            response.headers.add('Access-Control-Allow-Methods', 'DELETE, OPTIONS')
+            return response
+        
+        student = Student.query.get(student_id)
+        if not student or student.school_id != user.school_id:
+            return jsonify({'error': 'Student not found or access denied'}), 404
+        
+        # Soft delete by setting is_active to False
+        student.is_active = False
+        db.session.commit()
+        
+        logger.info(f"Student {student.name} deleted by {user.name}")
+        return jsonify({'message': 'Student deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deleting student: {str(e)}")
+        return jsonify({'error': 'Failed to delete student'}), 500
+
+# --- Error Handlers ---
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Endpoint not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return jsonify({'error': 'Internal server error'}), 500
+
+# --- App Initialization ---
+def create_tables():
+    with app.app_context():
+        db.create_all()
+        logger.info("Database tables created")
+        
+
+# Add this route to your app.py
+@app.route('/api/students/<int:student_id>/attendance/weekly', methods=['GET'])
+@require_role(['teacher', 'principal', 'district'])
+def get_student_weekly_attendance(user, student_id):
+    try:
+        # Get student and verify access
+        student = Student.query.get(student_id)
+        if not student or student.school_id != user.school_id:
+            return jsonify({'error': 'Student not found or access denied'}), 404
+        
+        # Calculate date range for the last 7 days
+        end_date = datetime.utcnow().date()
+        start_date = end_date - timedelta(days=6)  # 7 days including today
+        
+        # Query attendance records for the last 7 days
+        attendance_records = AttendanceRecord.query.filter(
+            AttendanceRecord.student_id == student_id,
+            AttendanceRecord.date.between(start_date, end_date)
+        ).order_by(AttendanceRecord.date.desc()).all()
+        
+        # Create a dictionary for easy lookup
+        attendance_dict = {record.date.isoformat(): record.status for record in attendance_records}
+        
+        # Generate data for the last 7 days
+        weekly_data = []
+        for i in range(6, -1, -1):  # From 6 days ago to today
+            current_date = end_date - timedelta(days=i)
+            date_str = current_date.isoformat()
+            status = attendance_dict.get(date_str, 'NA')  # 'NA' if no record
+            
+            weekly_data.append({
+                'date': date_str,
+                'status': status
+            })
+        
+        return jsonify({
+            'student_id': student_id,
+            'student_name': student.name,
+            'weekly_attendance': weekly_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching weekly attendance: {str(e)}")
+        return jsonify({'error': 'Failed to fetch attendance data'}), 500
 
 if __name__ == '__main__':
     with app.app_context():
