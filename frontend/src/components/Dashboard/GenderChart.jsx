@@ -15,6 +15,8 @@ import {
     ChartLegendContent,
 } from "@/components/ui/chart"
 
+import { useTranslation } from "react-i18next";
+
 export const description = "A pie chart with a legend"
 
 const chartData = [
@@ -76,8 +78,8 @@ const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name
             textAnchor="middle"
             dominantBaseline="central"
             style={{
-                fontSize: '20px',
-                fontWeight: '600',
+                fontSize: '16px',
+                fontWeight: '400',
                 textShadow: '1px 1px 2px rgba(0,0,0,0.7)'
             }}
         >
@@ -89,6 +91,8 @@ const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name
 
 
 export default function GenderChart({ data = [] }) {
+    const { t } = useTranslation();
+
     if (!data.length) {
         return (
             <Card>

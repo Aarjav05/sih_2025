@@ -5,7 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react"
 
+import { useTranslation } from 'react-i18next';
+
+
 export default function PreviewOverlay({ photos = [], selectedPhoto, captureResults = [], onFaceClick, facesDetected, matchesFound }) {
+
+    const { t } = useTranslation();
+
     const [zoom, setZoom] = useState(1)
     const [selectedFaceId, setSelectedFaceId] = useState(null)
     const [currentIndex, setCurrentIndex] = useState(0)

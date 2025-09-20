@@ -18,6 +18,7 @@ import ChartBar from "../components/Dashboard/ChartBar"
 import ChartPie from "../components/Dashboard/ChartPie"
 import GenderChart from "../components/Dashboard/GenderChart";
 
+
 import {
     ChartContainer,
     ChartTooltip,
@@ -28,8 +29,13 @@ import Watchlist from "../components/Dashboard/WatchList"
 import DashboardLayout from "../components/Dashboard/DashboardLayout"
 import { max } from "date-fns";
 
+import { useTranslation } from "react-i18next";
+
 
 export default function Dashboard() {
+
+    const { t } = useTranslation();
+
     const [selectedClass, setSelectedClass] = useState("class-1");
     const [genderChartData, setGenderChartData] = useState([]);
     const [includeAttendance, setIncludeAttendance] = useState(false);
@@ -56,18 +62,18 @@ export default function Dashboard() {
     //     bestClass: "Class 10A",
     // }
     const MOCK_CLASSES = [
-        { id: "class-1", name: "class-1" },
-        { id: "class-2", name: "Class 2" },
-        { id: "class-3", name: "Class 3" },
-        { id: "class-4", name: "Class 4" },
+        { id: "class-1", name: t("class-1") },
+        { id: "class-2", name: t("Class 2") },
+        { id: "class-3", name: t("Class 3") },
+        { id: "class-4", name: t("Class 4") },
         // Add more as needed or fetch dynamically from backend
     ]
 
 
     const recentSMS = [
-        { message: "Attendance reminder for tomorrow's exam", timestamp: "2 hours ago" },
-        { message: "Parent-teacher meeting scheduled", timestamp: "4 hours ago" },
-        { message: "Holiday announcement for next week", timestamp: "1 day ago" },
+        { message: t("Attendance reminder for tomorrow's exam"), timestamp: "2 hours ago" },
+        { message: t("Parent-teacher meeting scheduled"), timestamp: "4 hours ago" },
+        { message: t("Holiday announcement for next week"), timestamp: "1 day ago" },
     ]
 
 
@@ -128,7 +134,7 @@ export default function Dashboard() {
     useEffect(() => {
         async function fetchWatchlist() {
             try {
-                const students = await fetchLowAttendanceWatchlist(80, 30, selectedWatchlistClass);
+                const students = await fetchLowAttendanceWatchlist(75, 30, selectedWatchlistClass);
                 setWatchlistStudents(students);
             } catch (err) {
                 console.error("Error fetching watchlist:", err);
@@ -173,14 +179,14 @@ export default function Dashboard() {
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 <KpiCard icon={Users}
-                    title="Total Students"
+                    title={t("Total Students")}
                     value={totalStudents} />
                 {/* <KpiCard icon={TrendingUp}
                     title="Avg Attendance(30d)"
                     value={`${averageAttendance}%`} /> */}
                 <KpiCard
                     icon={UserCheck}
-                    title="Present Today"
+                    title={t("Present Today")}
                     value={`${presentToday.count} (${presentToday.percent}%)`}
                 />
                 {/* <KpiCard icon={Award}
@@ -197,7 +203,7 @@ export default function Dashboard() {
                     <div className="mb-2 rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
                         <Card>
                             <CardHeader className="flex justify-between items-center">
-                                <CardTitle className="font-medium text-lg md:text-xl lg:text-2xl" >Students by Gender</CardTitle>
+                                <CardTitle className="font-medium text-lg md:text-xl lg:text-2xl" >{t('Students by Gender')}</CardTitle>
                                 <Select value={selectedClass} onValueChange={setSelectedClass}>
                                     <SelectTrigger className="w-full sm:w-48">
                                         <SelectValue placeholder="Choose class..." />
@@ -211,7 +217,7 @@ export default function Dashboard() {
                                     </SelectContent>
                                 </Select>
                                 <div className="flex items-center space-x-2">
-                                    <span className="text-sm">{includeAttendance ? "Present Students by Gender" : "Gender"}</span>
+                                    <span className="text-sm">{includeAttendance ? t("Present Students by Gender") : t("Gender")}</span>
                                     <Switch
                                         checked={includeAttendance}
                                         onCheckedChange={setIncludeAttendance}
@@ -233,20 +239,20 @@ export default function Dashboard() {
                     {/* Quick Actions */}
                     <Card className="max-h-fit rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
                         <CardHeader>
-                            <CardTitle className="text-lg">Quick Actions</CardTitle>
+                            <CardTitle className="text-lg">{t('Quick Actions')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             <Button className="w-full justify-start gap-2">
                                 <Play className="w-4 h-4" />
-                                <a href="/attendance">Start Attendance</a>
+                                <a href="/attendance">{t('Start Attendance')}</a>
                             </Button>
-                            <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
+                            {/* <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
                                 <Send className="w-4 h-4" />
                                 Send SMS
-                            </Button>
+                            </Button> */}
                             <Button variant="outline" className="w-full justify-start gap-2 bg-transparent">
                                 <UserPlus className="w-4 h-4" />
-                                <a href="/students">Add Student</a>
+                                <a href="/students">{t('Add Student')}</a>
                             </Button>
                         </CardContent>
                     </Card>
@@ -254,7 +260,7 @@ export default function Dashboard() {
                     Recent SMS
                     <Card className="rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
                         <CardHeader>
-                            <CardTitle className="text-lg">Recent SMS</CardTitle>
+                            <CardTitle className="text-lg">{t('Recent SMS')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {recentSMS.map((sms, index) => (

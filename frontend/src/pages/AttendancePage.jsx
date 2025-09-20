@@ -13,6 +13,8 @@ import StudentRollList from "../components/Attendance/StudentRollList"
 import ConfirmSessionModal from "../components/Attendance/ConfirmSessionModal"
 import ToastContainer from '../components/ToastContainer';
 
+import { useTranslation } from "react-i18next";
+
 // MOCK DATA - Replace with API calls
 const MOCK_CLASSES = [
     { id: "class-1", name: "Class 1" },

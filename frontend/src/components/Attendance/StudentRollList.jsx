@@ -10,7 +10,13 @@ import { Switch } from "@/components/ui/switch"
 import { Search, Users, CheckCircle, XCircle, Clock, Filter } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+import { useTranslation } from 'react-i18next';
+
+
 export default function StudentRollList({ students, onStatusChange }) {
+
+    const { t } = useTranslation();
+
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [sortBy, setSortBy] = useState("name")

@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Upload, Camera, ImageIcon, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+import { useTranslation } from 'react-i18next';
+
+
 //converting to base64
 const toBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -14,6 +17,9 @@ const toBase64 = (file) =>
     })
 
 export default function UploadCapturePanel({ onPhotosUploaded, selectedClass }) {
+
+    const { t } = useTranslation();
+
     const [isDragging, setIsDragging] = useState(false)
     const [showCameraInfo, setShowCameraInfo] = useState(false)
     const fileInputRef = useRef(null)

@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
+import { useTranslation } from 'react-i18next';
+
+
+
 const AttendanceChart = ({ activeTab, attendanceData }) => {
   const canvasRef = useRef(null);
 
@@ -104,6 +108,9 @@ const AttendanceChart = ({ activeTab, attendanceData }) => {
 }
 
 const StudentDashboard = () => {
+
+  const { t } = useTranslation();
+
   const [students, setStudents] = useState([]);
   const [currentStudent, setCurrentStudent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");

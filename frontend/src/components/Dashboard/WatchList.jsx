@@ -12,26 +12,30 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
+import { useTranslation } from "react-i18next";
+
 export default function Watchlist({ students, onUpdate, selectedWatchClass = "class-1", setSelectedWatchClass }) {
+
+    const { t } = useTranslation();
     return (
         <Card className="rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2  font-medium text-lg md:text-xl lg:text-2xl">
                         <AlertTriangle className="w-5 h-5 text-orange-500" />
-                        Low Attendance Watchlist
+                        {t("Low Attendance Watchlist")}
                     </CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
                     <Select value={selectedWatchClass} onValueChange={setSelectedWatchClass}>
                         <SelectTrigger className="w-[140px]" aria-label="Filter by class">
-                            <SelectValue placeholder="All Classes" />
+                            <SelectValue placeholder={t("All Classes")} />
                         </SelectTrigger>
                         <SelectContent>
                             {/* Hardcoded classes for dropdown */}
-                            <SelectItem value="class-1">class-1</SelectItem>
-                            <SelectItem value="class-2">class-2</SelectItem>
-                            <SelectItem value="class-3">class-3</SelectItem>
+                            <SelectItem value="class-1">{t("class-1")}</SelectItem>
+                            <SelectItem value="class-2">{t("class-2")}</SelectItem>
+                            <SelectItem value="class-3">{t("class-3")}</SelectItem>
                         </SelectContent>
 
                     </Select>

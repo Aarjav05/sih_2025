@@ -3,30 +3,53 @@ import { Link, useLocation } from "react-router-dom";
 import { Users, LayoutDashboard, Hand, Calendar, BarChart3, X, LogOut, UserCheck, ChartPie } from "lucide-react";
 import { useAuth } from '../Context/AuthContext';
 import { Button } from "@/components/ui/button";
-import { Menu, Eye } from "lucide-react"
+import { Menu, Eye } from "lucide-react";
+import Language from "./Language";
 
-const menuItems = [
-    { label: "Dashboard", icon: <LayoutDashboard />, to: "/dashboard" },
-    { label: "Students", icon: <Users />, to: "/students" },
-    // { label: "Teachers", icon: <Users />, to: "/teachers" },
-    { label: "View Attendance", icon: <Users />, to: "/view-attendance" },
-    { label: "Take Attendance", icon: <Hand />, to: "/attendance" },
-    { label: "Analytics", icon: <BarChart3 />, to: "/analytics" }
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import { useTranslation } from 'react-i18next';
+
+const allMenuItems = [
+    { label: "Dashboard", icon: <LayoutDashboard />, to: "/dashboard", roles: ["teacher", "principal"] },
+    { label: "Students", icon: <Users />, to: "/students", roles: ["teacher", "principal"] },
+    { label: "ViewAttendance", icon: <Eye />, to: "/view-attendance", roles: ["teacher", "principal"] },
+    { label: "TakeAttendance", icon: <Hand />, to: "/attendance", roles: ["teacher"] },
+    { label: "Analytics", icon: <BarChart3 />, to: "/analytics", roles: ["teacher", "principal", "district"] }
 ];
 
 export default function Sidebar({ open, setOpen }) {
+    const { t, i18n } = useTranslation();
+
     const [isHovered, setIsHovered] = useState(false);
     const location = useLocation();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const [selectedOption, setSelectedOption] = useState("Dashboard");
+
+    const userRole = user?.role || "teacher";
+    const menuItems = allMenuItems.filter(item => item.roles.includes(userRole));
+
+    const getDefaultRoute = (role) => {
+        switch (role) {
+            case "district":
+                return "/analytics";
+            case "principal":
+                return "/dashboard";
+            case "teacher":
+            default:
+                return "/dashboard";
+        }
+    };
+
+    const handleLanguageChange = (lang) => {
+        i18n.changeLanguage(lang);
+    };
 
     return (
         <>
             {/* Top Navbar - Mobile Only */}
-
             <div className="z-50 bg-blue-50 lg:hidden top-0 sticky border-b rounded-xl border-border p-5 text-center shadow-md">
-
-                <h1 className="text-lg font-semibold ">{selectedOption}</h1>
+                <h1 className="text-lg font-semibold ">{t(selectedOption)}</h1>
             </div>
 
             {/* Sidebar */}
@@ -43,10 +66,8 @@ export default function Sidebar({ open, setOpen }) {
                 {/* Mobile header with close button - ONLY visible on mobile */}
                 <div className="lg:hidden flex items-center justify-between p-4 border-b border-blue-200">
                     <div className="flex items-center gap-3">
-                        <span className="bg-blue-600 text-white p-2 rounded-lg">
-                            <Users size={24} />
-                        </span>
-                        <span className="font-bold text-lg text-blue-900">Markr</span>
+                        <img src="/attendance.png" className="w-9 h-9" alt="" />
+                        <span className="font-bold text-lg text-white">Markr</span>
                     </div>
                     <button
                         onClick={() => setOpen(false)}
@@ -58,11 +79,8 @@ export default function Sidebar({ open, setOpen }) {
 
                 {/* Desktop logo - ONLY visible on desktop */}
                 <div className="hidden lg:flex items-center justify-start p-4 mb-8">
-                    <span className="bg-[#18183C] text-white p-2 rounded-lg">
-                        <Users size={32} />
-                    </span>
-                    <span className={`ml-3 font-bold text-xl text-white transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
-                        }`}>
+                    <img src="/attendance.png" className="w-11 h-10" alt="" />
+                    <span className={`ml-3 font-bold text-xl text-white transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
                         Markr
                     </span>
                 </div>
@@ -80,27 +98,43 @@ export default function Sidebar({ open, setOpen }) {
                                     : "hover:bg-gradient-to-r from-[#001233] to-[#003080] text-white"
                                 }
               `}
-                            onClick={() => { setOpen(false); setSelectedOption(item.label) }} // Close mobile menu on navigation
+                            onClick={() => { setOpen(false); setSelectedOption(t(item.label)) }}
                         >
                             <span className="text-xl flex-shrink-0">{item.icon}</span>
                             <span className={`
                 whitespace-nowrap transition-all duration-300
                 ${(isHovered || open) ? 'opacity-100 w-auto' : 'lg:opacity-0 lg:w-0 lg:overflow-hidden'}
               `}>
-                                {item.label}
+                                {t(item.label)}
                             </span>
                         </Link>
                     ))}
+
+                    <Language></Language>
+
+                    {/* Language Dropdown */}
+                    {/* <div className="mt-4 px-3">
+                        <Select onValueChange={handleLanguageChange} defaultValue={i18n.language}>
+                            <SelectTrigger className={`w-full text-white bg-transparent border border-white rounded-md ${isHovered || open ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'} transition-opacity duration-300`}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="en">English</SelectItem>
+                                <SelectItem value="hi">हिन्दी</SelectItem>
+                                <SelectItem value="mr">मराठी</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div> */}
                 </nav>
 
                 {/* Logout button - positioned at bottom */}
-                <div className="absolute bottom-4 left-0 right-0 px-3">
+                <div className="relative -bottom-10 left-0 right-0 px-3">
                     <button
                         onClick={() => {
                             logout();
                             setOpen(false);
                         }}
-                        className="flex items-center gap-3 w-full px-3 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-all duration-200"
+                        className="z-100 flex items-center gap-3 w-full px-3 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-all duration-200"
                     >
                         <LogOut size={20} className="flex-shrink-0" />
                         <span className={`

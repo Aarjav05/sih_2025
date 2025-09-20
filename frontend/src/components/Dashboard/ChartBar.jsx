@@ -13,7 +13,12 @@ import {
     ChartTooltipContent,
 } from "@/components/ui/chart";
 
+import { useTranslation } from "react-i18next";
+
 export default function ChartBar({ data }) {
+
+    const { t } = useTranslation();
+
     const chartConfig = {
         attendance: {
             label: "Attendance (%)",
@@ -24,7 +29,7 @@ export default function ChartBar({ data }) {
     return (
         <Card className="rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
             <CardHeader>
-                <CardTitle className="font-medium text-lg md:text-xl lg:text-2xl">Attendance by Class</CardTitle>
+                <CardTitle className="font-medium text-lg md:text-xl lg:text-2xl">{t('Attendance by Class')}</CardTitle>
                 <CardDescription>
                     Percentage attendance across all classes
                 </CardDescription>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../Context/AuthContext';
 
+import { useTranslation } from "react-i18next";
+
 const ViewAttendancePage = () => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [selectedClass, setSelectedClass] = useState('class-1');
@@ -11,11 +13,12 @@ const ViewAttendancePage = () => {
   const [classes] = useState(['class-1', 'class-2', 'class-3', 'class-4', 'class-5']);
   const { getToken } = useAuth();
 
+
   const fetchAttendance = async () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const token = getToken();
       if (!token) {
         setError('Please login first');
@@ -24,7 +27,7 @@ const ViewAttendancePage = () => {
       }
 
       console.log('Fetching attendance for:', selectedDate, 'class:', selectedClass);
-      
+
       const response = await axios.get(`http://localhost:5000/api/reports/daily/${selectedDate}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -42,10 +45,10 @@ const ViewAttendancePage = () => {
             const num = id.replace(/\D/g, ''); // Remove non-digit characters
             return num ? parseInt(num) : 0;
           };
-          
+
           return extractNumber(a.student_id) - extractNumber(b.student_id);
         });
-      
+
       console.log('Filtered and sorted data:', classData);
       setAttendanceData(classData);
     } catch (err) {
@@ -73,7 +76,7 @@ const ViewAttendancePage = () => {
       return (
         <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center w-20 justify-center">
           <svg className="w-3 h-3 me-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
-            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 5.917 5.724 10.5 15 1.5"/>
+            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 5.917 5.724 10.5 15 1.5" />
           </svg>
           Present
         </span>
@@ -82,7 +85,7 @@ const ViewAttendancePage = () => {
       return (
         <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center w-20 justify-center">
           <svg className="w-3 h-3 me-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
           </svg>
           Absent
         </span>
@@ -116,7 +119,7 @@ const ViewAttendancePage = () => {
                 ))}
               </select>
             </div>
-            
+
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">Select Date</label>
               <input
@@ -126,7 +129,7 @@ const ViewAttendancePage = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            
+
             <div>
               <button
                 onClick={fetchAttendance}
@@ -154,7 +157,7 @@ const ViewAttendancePage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex items-center">
               <div className="p-3 bg-green-100 rounded-lg mr-4">
@@ -170,7 +173,7 @@ const ViewAttendancePage = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-xl shadow-sm p-6">
             <div className="flex items-center">
               <div className="p-3 bg-red-100 rounded-lg mr-4">

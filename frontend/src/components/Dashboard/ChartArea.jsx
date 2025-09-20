@@ -24,6 +24,8 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 
+import { useTranslation } from "react-i18next";
+
 const chartConfig = {
     present: {
         label: "Present",
@@ -37,6 +39,9 @@ const chartConfig = {
 
 
 export default function ChartArea({ data, timeRange, onTimeRangeChange }) {
+
+    const { t } = useTranslation();
+
     // console.log("data in area chart: ", data);
     // console.log("Time range: ", timeRange);
     // Date format for XAxis ticks

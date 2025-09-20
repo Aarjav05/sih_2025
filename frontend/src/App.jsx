@@ -11,9 +11,45 @@ import Login from "./components/Login/Login";
 import ToastContainer from "./components/ToastContainer";
 import { AuthProvider, useAuth } from './Context/AuthContext';
 import ViewAttendance from "./components/Students/ViewAttendance";
+import StaticStudent from "./components/StaticStudent";
 import './App.css';
+import Chatbot from "./components/Chatbot";
+
+import './i18n';
 
 // Inline route protection (no separate file needed)
+function RoleProtected({ children, allowedRoles }) {
+  const { isAuthenticated, user } = useAuth();
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  const userRole = user?.role || "teacher";
+
+  console.log("Current user role:", userRole);
+
+  if (!allowedRoles.includes(userRole)) {
+    // Redirect to appropriate default page based on role
+    const getDefaultRoute = (role) => {
+      switch (role) {
+        case "district":
+          return "/analytics";
+        case "principal":
+          return "/dashboard";
+        case "teacher":
+        default:
+          return "/dashboard";
+      }
+    };
+    return <Navigate to={getDefaultRoute(userRole)} replace />;
+  }
+
+  return children;
+}
+
+// Basic authentication protection (no role check)
 function Protected({ children }) {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
@@ -55,19 +91,23 @@ function MainAppLayout() {
           <Route path="/login" element={<Login />} />
           <Route
             path="/dashboard"
-            element={<Protected><DashboardPage /></Protected>}
+            element={<RoleProtected allowedRoles={["teacher", "principal"]}><DashboardPage /></RoleProtected>}
           />
           <Route
             path="/view-attendance"
-            element={<Protected><ViewAttendance /></Protected>}
+            element={<RoleProtected allowedRoles={["teacher", "principal"]}><ViewAttendance /></RoleProtected>}
           />
           <Route
             path="/attendance"
-            element={<Protected><AttendancePage /></Protected>}
+            element={<RoleProtected allowedRoles={["teacher"]}><AttendancePage /></RoleProtected>}
           />
           <Route
             path="/students"
-            element={<Protected><StudentDastboard /></Protected>}
+            element={<RoleProtected allowedRoles={["teacher", "principal"]}><StudentDastboard /></RoleProtected>}
+          />
+          <Route
+            path="/students/STU013"
+            element={<StaticStudent />}
           />
           <Route
             path="/teachers"
@@ -75,7 +115,7 @@ function MainAppLayout() {
           />
           <Route
             path="/analytics"
-            element={<Protected><AnalyticsPage /></Protected>}
+            element={<RoleProtected allowedRoles={["teacher", "principal", "district"]}><AnalyticsPage /></RoleProtected>}
           />
           <Route
             path="/"
@@ -87,8 +127,9 @@ function MainAppLayout() {
           />
         </Routes>
         <ToastContainer />
+        <Chatbot></Chatbot>
       </main>
-    </div>
+    </div >
   );
 }
 

@@ -6,7 +6,13 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CheckCircle, XCircle, UserPlus, Edit3, AlertTriangle } from "lucide-react"
 
+import { useTranslation } from 'react-i18next';
+
+
 export default function MatchResultCard({ result, students, onMatchUpdate, confidenceThreshold = 0.75 }) {
+
+    const { t } = useTranslation();
+
     const [isEditing, setIsEditing] = useState(false)
     const [selectedStudentId, setSelectedStudentId] = useState(result.matched_student_id || "")
 

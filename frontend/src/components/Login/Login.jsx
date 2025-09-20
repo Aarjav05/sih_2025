@@ -4,7 +4,14 @@ import { useAuth } from "../../Context/AuthContext"
 import axios from "axios"
 import { Eye, EyeOff, Mail, Lock, LogIn, GraduationCap } from "lucide-react"
 
+import { useTranslation } from 'react-i18next';
+
+
 export default function Login() {
+
+  const { t } = useTranslation();
+
+
   const { login } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
@@ -40,10 +47,11 @@ export default function Login() {
       {/* Left section: Login Form */}
       <div className="flex flex-1 flex-col justify-center items-center px-4 py-8">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-[3px_12px_5px_0px_rgba(0,0,0,0.35)] p-8 flex flex-col gap-6">
-          <div className="flex items-center gap-3 mb-2">
-            <GraduationCap className="text-black" size={32} />
+          <div className="flex flex-col justify-center items-center gap-1 mb-0.5">
+            <img src="/attendance.png" className="w-12 h-12" alt="" />
             <span className="text-3xl font-bold text-black">Markr</span>
           </div>
+          <hr className="h-0.5 bg-gray-600 w-4/5 mx-auto" />
           <h2 className="text-2xl font-bold text-center">Sign In</h2>
           <p className="mb-2 text-gray-500 text-center">
             Continue with your email to access your attendance dashboard.
@@ -114,7 +122,7 @@ export default function Login() {
             <span>Privacy Policy</span>
             <span>Terms of Service</span>
           </div>
-          <div className="text-center mt-2 text-xs text-gray-400">© 2024 EduTrack. All rights reserved.</div>
+          <div className="text-center mt-2 text-xs text-gray-400">© 2025 Markr. All rights reserved.</div>
         </div>
       </div>
       {/* Right section: Responsive Image */}

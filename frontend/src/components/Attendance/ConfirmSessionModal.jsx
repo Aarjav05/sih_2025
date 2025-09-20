@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import { CheckCircle, XCircle, Clock, Calendar, Users, FileText, MessageSquare, Download } from "lucide-react"
 import { format } from "date-fns"
 
+import { useTranslation } from 'react-i18next';
+
+
 
 export default function ConfirmSessionModal({
     isOpen,
@@ -20,6 +23,9 @@ export default function ConfirmSessionModal({
     students,
     onReset
 }) {
+
+    const { t } = useTranslation();
+
     const [sessionNote, setSessionNote] = useState("")
     const [isConfirming, setIsConfirming] = useState(false)
     const [showExportOptions, setShowExportOptions] = useState(false)

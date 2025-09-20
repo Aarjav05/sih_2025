@@ -16,6 +16,8 @@ import { useAuth } from "../Context/AuthContext"
 import { fetchSchoolAnalytics, fetchDistrictOverview, fetchSchoolClasses, fetchSchoolClassStudents } from "../api/analytics";
 import { use } from "react"
 
+import { useTranslation } from "react-i18next";
+
 // const fetchSchoolAnalytics = async (token, startDate, endDate) => {
 //     // Simulate API delay
 //     await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -131,6 +133,9 @@ function KpiCard({ title, value, icon: Icon, trend, description }) {
 }
 
 export default function AnalyticsPage() {
+
+    const { t } = useTranslation();
+
     const [startDate, setStartDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
     const [analytics, setAnalytics] = useState(null);
@@ -393,25 +398,25 @@ export default function AnalyticsPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                                     <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                                         <p className="text-2xl font-bold text-blue-600">{districtOverview.summary.total_schools}</p>
-                                        <p className="text-sm text-muted-foreground">Total Schools</p>
+                                        <p className="text-sm text-muted-foreground">{t('Total Schools')}</p>
                                     </div>
                                     <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                                         <p className="text-2xl font-bold text-green-600">{districtOverview.summary.active_schools}</p>
-                                        <p className="text-sm text-muted-foreground">Active Schools</p>
+                                        <p className="text-sm text-muted-foreground">{t('Active Schools')}</p>
                                     </div>
                                     <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                                         <p className="text-2xl font-bold text-purple-600">
                                             {districtOverview.summary.total_students.toLocaleString()}
                                         </p>
-                                        <p className="text-sm text-muted-foreground">Total Students</p>
+                                        <p className="text-sm text-muted-foreground">{t('Total Students')}</p>
                                     </div>
                                     <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                                         <p className="text-2xl font-bold text-orange-600">{districtOverview.summary.total_teachers}</p>
-                                        <p className="text-sm text-muted-foreground">Total Teachers</p>
+                                        <p className="text-sm text-muted-foreground">{t('Total Teachers')}</p>
                                     </div>
                                     <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                                         <p className="text-2xl font-bold text-indigo-600">{districtOverview.summary.average_attendance}%</p>
-                                        <p className="text-sm text-muted-foreground">Avg Attendance</p>
+                                        <p className="text-sm text-muted-foreground">{t('Avg Attendance')}</p>
                                     </div>
                                 </div>
                             </CardContent>

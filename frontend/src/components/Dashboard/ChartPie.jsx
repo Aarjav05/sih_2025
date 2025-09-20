@@ -28,7 +28,12 @@ const chartConfig = {
     },
 }
 
+import { useTranslation } from "react-i18next";
+
 export default function ChartPie({ data }) {
+
+    const { t } = useTranslation();
+
     //console.log("ChartPie data: ", data);
     const totalCount = data ? data.reduce((total, entry) => total + entry.value, 0) : 0;
 
@@ -37,7 +42,7 @@ export default function ChartPie({ data }) {
     return (
         <Card className="flex flex-col rounded-2xl shadow-xl hover:shadow-2xl transition-all ease-in">
             <CardHeader className="items-center pb-0">
-                <CardTitle className="font-medium text-lg md:text-xl lg:text-2xl text-center">Today's Attendance: </CardTitle>
+                <CardTitle className="font-medium text-lg md:text-xl lg:text-2xl text-center">{t("Today's Attendance: ")}</CardTitle>
             </CardHeader>
             <hr className="mx-auto h-1.5 w-2/3" />
             <CardContent className="flex-1 pb-0">
@@ -53,7 +58,7 @@ export default function ChartPie({ data }) {
                                 nameKey="label"
                                 cx="50%"
                                 cy="50%"
-                                innerRadius="55%"    // Use percentage for responsive radii
+                                innerRadius="50%"    // Use percentage for responsive radii
                                 outerRadius="73%"    // Responsive outer radius
                                 paddingAngle={4}
                             >
@@ -69,7 +74,7 @@ export default function ChartPie({ data }) {
                                                     y={viewBox.cy}
                                                     textAnchor="middle"
                                                     dominantBaseline="middle"
-                                                    className="text-md md:text-4xl font-bold fill-foreground"
+                                                    className="text-2xl md:text-4xl font-bold fill-foreground"
                                                 >
                                                     {totalCount}
                                                     <tspan
@@ -96,7 +101,7 @@ export default function ChartPie({ data }) {
             </CardContent>
             <CardFooter className="flex-col gap-2 text-sm">
                 <div className="flex items-center gap-2 leading-none font-medium text-md md:text-lg">
-                    Summary of present and absent students
+                    {t('Summary of present and absent students')}
                 </div>
             </CardFooter>
         </Card>

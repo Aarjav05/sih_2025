@@ -3,7 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Eye, RotateCcw, Trash2, ImageIcon } from "lucide-react"
 
+import { useTranslation } from 'react-i18next';
+
+
 export default function CaptureGallery({ photos, selectedPhoto, onPhotoSelect, onPhotosUploaded, onRetakePhoto, onRemovePhoto }) {
+    const { t } = useTranslation();
+
     const fileInputRef = useRef(null);
 
     // Trigger hidden file input click
